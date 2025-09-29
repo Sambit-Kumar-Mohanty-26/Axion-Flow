@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    // Module settings for modern Node.js
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "es2020", // A modern but stable JS version
+
+    // Project structure
+    "rootDir": "src",
+    "outDir": "dist",
+
+    // Interoperability
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+
+    // Strictness and best practices
+    "strict": true,
+    "skipLibCheck": true,
+    "verbatimModuleSyntax": true,
+    "sourceMap": true
+  },
+  // This is the critical fix for the rootDir error:
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules"]
+}
