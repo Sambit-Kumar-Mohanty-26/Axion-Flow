@@ -28,3 +28,23 @@ export const createTask = async (taskData: CreateTaskInput) => {
     },
   });
 };
+export const assignTaskToWorker = async (taskId: string, workerId: string) => {
+  return prisma.$transaction(async (tx) => {
+    const updatedTask = await tx.task.update({
+      where: { id: taskId },
+      data: {
+        assignedWorkerId: workerId,
+        status: 'IN_PROGRESS',
+      },
+    });
+
+    await tx.worker.update({
+      where: { id: workerId },
+      data: {
+        status: 'ON_TASK',
+      },
+    });
+
+    return updatedTask;
+  });
+};
