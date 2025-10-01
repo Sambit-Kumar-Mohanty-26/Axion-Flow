@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,6 +6,104 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model Organization {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  status    String    @default("PENDING")
+  factories Factory[]
+  users     User[]
+}
+
+model Factory {
+  id             String        @id @default(cuid())
+  name           String
+  status         String        @default("PENDING") 
+  
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  
+  users          User[]
+  workers        Worker[]
+  tasks          Task[]
+  skills         Skill[]
+}
+
+enum Role {
+  ORG_ADMIN       
+  FACTORY_MANAGER 
+  WORKER          
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String?
+  status       String    @default("PENDING") 
+  role         Role      @default(WORKER)   
+
+  factoryId    String
+  factory      Factory   @relation(fields: [factoryId], references: [id])
+
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+
+  worker         Worker? 
+}
+
+model Invitation {
+  id          String   @id @default(cuid())
+  email       String
+  token       String   @unique 
+  role        Role
+  factoryId   String
+  expiresAt   DateTime 
+}
+
+
+model Skill {
+  id          String        @id @default(cuid())
+  name        String
+  workers     WorkerSkill[]
+  requiredFor Task[]
+
+  factoryId   String
+  factory     Factory       @relation(fields: [factoryId], references: [id])
+}
+
+model Worker {
+  id               String        @id @default(cuid())
+  name             String
+  employeeId       String?
+  status           WorkerStatus  @default(AVAILABLE)
+  fatigueLevel     Float         @default(0.0)
+  location_x       Float         @default(0.0)
+  location_y       Float         @default(0.0)
+  userId           String?       @unique 
+  user             User?         @relation(fields: [userId], references: [id])
+  skills           WorkerSkill[]
+  assignedTask     Task?
+
+  factoryId        String
+  factory          Factory       @relation(fields: [factoryId], references: [id])
+  @@unique([factoryId, employeeId])
+}
+
+model Task {
+  id               String        @id @default(cuid())
+  description      String
+  status           TaskStatus    @default(PENDING)
+  priority         TaskPriority  @default(MEDIUM)
+  requiredSkillId  String?
+  assignedWorkerId String?       @unique
+
+  requiredSkill    Skill?        @relation(fields: [requiredSkillId], references: [id])
+  assignedWorker   Worker?       @relation(fields: [assignedWorkerId], references: [id])
+  
+  factoryId        String
+  factory          Factory       @relation(fields: [factoryId], references: [id])
+}
+
 
 enum WorkerStatus {
   AVAILABLE
@@ -31,45 +126,12 @@ enum TaskPriority {
   CRITICAL
 }
 
-model Skill {
-  id          String   @id @default(cuid())
-  name        String   @unique 
-  workers     WorkerSkill[]
-  requiredFor Task[]
-}
-
-model Worker {
-  id           String        @id @default(cuid())
-  name         String
-  status       WorkerStatus  @default(AVAILABLE)
-  fatigueLevel Float         @default(0.0) 
-  location_x   Float         @default(0.0)
-  location_y   Float         @default(0.0)
-  skills       WorkerSkill[]
-  assignedTask Task?
-}
-
-
 model WorkerSkill {
   workerId      String
   skillId       String
-  proficiency   Int      @default(1) 
-
+  proficiency   Int      @default(1)
   worker        Worker   @relation(fields: [workerId], references: [id])
   skill         Skill    @relation(fields: [skillId], references: [id])
 
   @@id([workerId, skillId])
-}
-
-
-model Task {
-  id              String        @id @default(cuid())
-  description     String
-  status          TaskStatus    @default(PENDING)
-  priority        TaskPriority  @default(MEDIUM)
-  requiredSkillId String?
-  assignedWorkerId String?      @unique 
-
-  requiredSkill   Skill?        @relation(fields: [requiredSkillId], references: [id])
-  assignedWorker  Worker?       @relation(fields: [assignedWorkerId], references: [id])
 }
