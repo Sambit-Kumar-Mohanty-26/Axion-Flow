@@ -1,13 +1,14 @@
-# This file configures the BACKEND services for deployment on Render.
-# The frontend will be deployed separately on Vercel.
+# render.yaml
 
 services:
-  # 1. The Backend API Service (Node.js / Express)
+  # 1. The Backend API Service
   - name: axion-flow-backend-app
     type: web
     runtime: docker
     plan: free
-    dockerfilePath: ./backend-api/Dockerfile # Path from the root of the repo
+    # The build context is set by the rootDir, so the Dockerfile path is relative to that.
+    rootDir: ./backend-api 
+    dockerfilePath: ./Dockerfile
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -17,12 +18,15 @@ services:
         value: http://axion-flow-ai-service-app:8000
       - fromGroup: axion-flow-secrets
 
-  # 2. The AI Service (Python / FastAPI)
+  # 2. The AI Service
   - name: axion-flow-ai-service-app
     type: web
     runtime: docker
     plan: free
-    dockerfilePath: ./ai-service/Dockerfile # Path from the root of the repo
+    # Set the root directory for the build context to 'ai-service'
+    rootDir: ./ai-service
+    # Now, Docker will look for 'Dockerfile' inside the 'ai-service' folder
+    dockerfilePath: ./Dockerfile
 
 # Defines the PostgreSQL database
 databases:
