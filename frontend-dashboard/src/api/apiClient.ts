@@ -1,7 +1,11 @@
 import axios from 'axios';
 
+const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
+console.log("API Client is configured to use base URL:", baseURL);
+
 const apiClient = axios.create({
-  baseURL: 'http://localhost:3001/api', 
+  baseURL: baseURL,
 });
 
 apiClient.interceptors.request.use(
