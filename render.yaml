@@ -3,7 +3,7 @@
 
 services:
   # 1. The PostgreSQL Database
-  - type: psql
+  - type: postgres
     name: axion-flow-db
     plan: free # Use the free tier for the database
     # Render will automatically handle the database URL for you
@@ -15,6 +15,9 @@ services:
     plan: free # Use the free tier for the web service
     # Tell Render where to find the Dockerfile for this service
     dockerfilePath: ./backend-api/Dockerfile
+    # ADDED: Command to run database migrations before starting the server.
+    # This is crucial for setting up your database schema on every deploy.
+    buildCommand: "cd backend-api && npx prisma migrate deploy"
     # Define the environment variables the backend needs
     envVars:
       - key: DATABASE_URL
@@ -22,6 +25,12 @@ services:
         fromDatabase:
           name: axion-flow-db
           property: connectionString
+      # ADDED: The internal URL for the AI service, so the backend can communicate with it.
+      - key: AI_SERVICE_URL
+        fromService:
+          type: web
+          name: axion-flow-ai-service
+          property: url # Render automatically provides the internal URL
       # Pull secrets from a "Secret Group" you will create in the Render UI
       - fromGroup: axion-flow-secrets
 
@@ -31,8 +40,6 @@ services:
     env: docker
     plan: free
     dockerfilePath: ./ai-service/Dockerfile
-    # We need to tell the backend how to find this service.
-    # We do this by creating an internal URL for it.
 
   # 4. The Frontend Service (if deploying on Render)
   # NOTE: If you are deploying the frontend to Vercel, you should DELETE this section.
