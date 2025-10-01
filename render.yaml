@@ -1,40 +1,35 @@
+# This file configures the BACKEND services for deployment on Render.
+# The frontend will be deployed separately on Vercel.
+
 services:
+  # 1. The Backend API Service (Node.js / Express)
   - name: axion-flow-backend-app
     type: web
     runtime: docker
     plan: free
-    dockerfilePath: ./backend-api/Dockerfile
-    rootDir: backend-api
+    dockerfilePath: ./backend-api/Dockerfile # Path from the root of the repo
     envVars:
       - key: DATABASE_URL
         fromDatabase:
-          name: axion-flow-main-db # <-- UPDATED
+          name: axion-flow-main-db
           property: connectionString
       - key: AI_SERVICE_URL
-        value: http://axion-flow-ai-service-app:8000 # <-- UPDATED
+        value: http://axion-flow-ai-service-app:8000
       - fromGroup: axion-flow-secrets
 
+  # 2. The AI Service (Python / FastAPI)
   - name: axion-flow-ai-service-app
     type: web
     runtime: docker
     plan: free
-    dockerfilePath: ./ai-service/Dockerfile
-    rootDir: ai-service
+    dockerfilePath: ./ai-service/Dockerfile # Path from the root of the repo
 
-  - name: axion-flow-frontend-app
-    type: web
-    runtime: docker
-    plan: free
-    dockerfilePath: ./frontend-dashboard/Dockerfile
-    rootDir: frontend-dashboard
-    envVars:
-      - key: VITE_API_URL
-        value: https://axion-flow-backend-app.onrender.com/api # <-- UPDATED
-
+# Defines the PostgreSQL database
 databases:
-  - name: axion-flow-main-db # <-- UPDATED
+  - name: axion-flow-main-db
     plan: free
 
+# Defines the secret group
 envVarGroups:
   - name: axion-flow-secrets
     envVars:
