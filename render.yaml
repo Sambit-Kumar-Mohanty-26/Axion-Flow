@@ -1,9 +1,5 @@
-# render.yaml
-# This file tells Render how to deploy your multi-service application.
-
 services:
-  # 1. The Backend API Service (Node.js / Express)
-  - name: axion-flow-backend
+  - name: axion-flow-backend-app
     type: web
     runtime: docker
     plan: free
@@ -12,42 +8,33 @@ services:
     envVars:
       - key: DATABASE_URL
         fromDatabase:
-          name: axion-flow-db
+          name: axion-flow-main-db # <-- UPDATED
           property: connectionString
       - key: AI_SERVICE_URL
-        # This uses the internal service name for private network communication.
-        value: http://axion-flow-ai-service:8000
+        value: http://axion-flow-ai-service-app:8000 # <-- UPDATED
       - fromGroup: axion-flow-secrets
 
-  # 2. The AI Service (Python / FastAPI)
-  - name: axion-flow-ai-service
+  - name: axion-flow-ai-service-app
     type: web
     runtime: docker
     plan: free
     dockerfilePath: ./ai-service/Dockerfile
     rootDir: ai-service
 
-  # 3. The Frontend Service (React / Vite)
-  # NOTE: If you are using Vercel for the frontend, delete this entire service block.
-  - name: axion-flow-frontend
+  - name: axion-flow-frontend-app
     type: web
     runtime: docker
     plan: free
     dockerfilePath: ./frontend-dashboard/Dockerfile
     rootDir: frontend-dashboard
     envVars:
-      # --- THIS IS THE CORRECTED PART ---
-      # We provide the final public URL of the backend service directly.
-      # This value is injected into the Vite build process.
       - key: VITE_API_URL
-        value: https://axion-flow-backend.onrender.com/api
+        value: https://axion-flow-backend-app.onrender.com/api # <-- UPDATED
 
-# Defines the PostgreSQL databases to be deployed
 databases:
-  - name: axion-flow-db
+  - name: axion-flow-main-db # <-- UPDATED
     plan: free
 
-# Defines groups of secret environment variables
 envVarGroups:
   - name: axion-flow-secrets
     envVars:
