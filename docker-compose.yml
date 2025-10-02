@@ -23,7 +23,7 @@ services:
       - DATABASE_URL=postgresql://admin:password123@postgres-db:5432/axionflow
       - JWT_SECRET=${JWT_SECRET}
       - SCREENSHOTONE_API_KEY=${SCREENSHOTONE_API_KEY}
-      - RESEND_API_KEY=${RESEND_API_KEY}
+      - SENDGRID_API_KEY=${SENDGRID_API_KEY}
     depends_on:
       - postgres-db 
 
