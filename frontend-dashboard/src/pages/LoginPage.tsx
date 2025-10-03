@@ -20,7 +20,10 @@ export const LoginPage = () => {
     setIsLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:3001/api/auth/login', { email, password });
+      const response = await axios.post(
+    `${import.meta.env.VITE_API_URL}/auth/login`, // Use the full path
+    { email, password }
+  );
       setAuthToken(response.data.token);
       navigate('/dashboard');
     } catch (err) {

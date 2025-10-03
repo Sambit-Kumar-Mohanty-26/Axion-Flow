@@ -3,7 +3,7 @@ import { io, Socket } from 'socket.io-client';
 
 const SocketContext = createContext<Socket | null>(null);
 
-const SOCKET_URL = 'http://localhost:3001';
+const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 export const SocketProvider = ({ children }: { children: ReactNode }) => {
   const socket = useMemo(() => io(SOCKET_URL), []);
