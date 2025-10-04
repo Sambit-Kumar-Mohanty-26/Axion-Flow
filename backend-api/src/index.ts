@@ -21,7 +21,7 @@ const httpServer = createServer(app);
 
 const allowedOrigins = [
     'http://localhost:5173',         
-    'https://axion-flow.vercel.app', 
+    'https://axion-flow.vercel.app' 
 ];
 
 const corsOptions = {
