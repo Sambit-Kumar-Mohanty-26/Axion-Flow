@@ -3,4 +3,5 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
+ENV VITE_API_URL=http://localhost:3001/api
 CMD ["npm", "run", "dev", "--", "--host"]
