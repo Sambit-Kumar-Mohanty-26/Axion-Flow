@@ -6,6 +6,7 @@ services:
     plan: free
     rootDir: ./backend-api
     dockerfilePath: ./Dockerfile
+    preDeployCommand: "npx prisma migrate deploy"
     envVars:
       - key: DATABASE_URL
         fromDatabase:
