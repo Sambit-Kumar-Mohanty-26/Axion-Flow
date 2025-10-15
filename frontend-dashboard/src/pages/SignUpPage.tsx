@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import axios from 'axios';
 import axionLogo from '../assets/logo.png';
+import apiClient from '../api/apiClient';
 
 export const SignUpPage = () => {
   const [email, setEmail] = useState('');
@@ -23,7 +23,7 @@ export const SignUpPage = () => {
     setIsLoading(true);
 
     try {
-      await axios.post('http://localhost:3001/api/auth/register', {
+      await apiClient.post('/auth/register',{
         email,
         password,
         organizationName,
