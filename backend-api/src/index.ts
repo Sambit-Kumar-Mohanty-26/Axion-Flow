@@ -53,8 +53,8 @@ io.on('connection', (socket) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/activation', activationRoutes);
-app.get('/api/health', protect, (req: AuthRequest, res) => {
-  res.status(200).json({ status: 'UP', user: req.user });
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'UP' });
 });
 
 app.use('/api/factories', protect, authorize('ORG_ADMIN'), factoryRoutes);
