@@ -16,7 +16,7 @@ import activationRoutes from './routes/activation.routes.js';
 import userRoutes from './routes/user.routes.js';
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = 10000;
 const httpServer = createServer(app);
 
 const allowedOrigins = [
