@@ -1,9 +1,8 @@
-// src/controllers/task.controller.ts
 import {} from 'express';
 import { PrismaClient } from '@prisma/client';
 import * as taskService from '../services/task.service.js';
 import * as aiService from '../services/ai.service.js';
-import {} from '../middleware/auth.middleware.js'; // Import custom request type
+import {} from '../middleware/auth.middleware.js';
 const prisma = new PrismaClient();
 export const handleGetAllTasks = async (req, res) => {
     const factoryId = req.user?.factoryId;

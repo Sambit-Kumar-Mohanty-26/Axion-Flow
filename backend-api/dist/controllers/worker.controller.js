@@ -1,4 +1,3 @@
-// src/controllers/worker.controller.ts
 import {} from 'express';
 import * as workerService from '../services/worker.service.js';
 import {} from '../middleware/auth.middleware.js';
@@ -26,7 +25,6 @@ export const handleCreateWorker = async (req, res) => {
         return res.status(400).json({ message: 'Worker name is required' });
     }
     try {
-        // Calling with THREE arguments, as expected by the service.
         const newWorker = await workerService.createWorker(name, skills || [], factoryId);
         res.status(201).json(newWorker);
     }
@@ -45,7 +43,6 @@ export const handleBulkImport = async (req, res) => {
         return res.status(401).json({ message: 'User must be associated with a factory and organization.' });
     }
     try {
-        // Calling with THREE arguments, as expected by the service.
         const result = await workerService.bulkImportWorkers(workers, factoryId, organizationId);
         res.status(201).json({ message: `${result.length} workers imported successfully.`, workers: result });
     }
@@ -64,7 +61,6 @@ export const handleUpdateWorkerStatus = async (req, res) => {
         return res.status(400).json({ message: 'Status and factoryId from token are required.' });
     }
     try {
-        // Calling with THREE arguments, as expected by the service.
         const updatedWorker = await workerService.updateWorkerStatus(id, status, factoryId);
         res.status(200).json(updatedWorker);
     }

@@ -1,9 +1,7 @@
-// src/controllers/skill.controller.ts
-import {} from 'express'; // <-- FIX #2: Added 'type'
+import {} from 'express';
 import * as skillService from '../services/skill.service.js';
-import {} from '../middleware/auth.middleware.js'; // <-- Import our custom request type
+import {} from '../middleware/auth.middleware.js';
 export const handleGetAllSkills = async (req, res) => {
-    // FIX #1: Get factoryId from the authenticated user
     const factoryId = req.user?.factoryId;
     if (!factoryId) {
         return res.status(401).json({ message: 'User factory not found in token' });
@@ -18,7 +16,6 @@ export const handleGetAllSkills = async (req, res) => {
 };
 export const handleCreateSkill = async (req, res) => {
     const { name } = req.body;
-    // FIX #1: Get factoryId from the authenticated user
     const factoryId = req.user?.factoryId;
     if (!factoryId) {
         return res.status(401).json({ message: 'User factory not found in token' });

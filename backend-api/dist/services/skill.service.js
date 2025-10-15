@@ -1,4 +1,3 @@
-// src/services/skill.service.ts
 import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 export const getAllSkills = async (factoryId) => {
@@ -9,7 +8,6 @@ export const getAllSkills = async (factoryId) => {
     });
 };
 export const createSkill = async (name, factoryId) => {
-    // Check if a skill with this name already exists FOR THIS FACTORY
     const existingSkill = await prisma.skill.findFirst({
         where: {
             name: name,

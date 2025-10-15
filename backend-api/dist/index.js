@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+// Import all your route handlers and middleware
 import skillRoutes from './routes/skill.routes.js';
 import workerRoutes from './routes/worker.routes.js';
 import taskRoutes from './routes/task.routes.js';
@@ -14,14 +15,28 @@ import activationRoutes from './routes/activation.routes.js';
 import userRoutes from './routes/user.routes.js';
 const app = express();
 const PORT = process.env.PORT || 3001;
-const httpServer = createServer(app); // Create an HTTP server from our Express app
+const httpServer = createServer(app);
+const allowedOrigins = [
+    'http://localhost:5173',
+    'https://axion-flow.vercel.app'
+];
+const corsOptions = {
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        }
+        else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true
+};
+app.use(cors(corsOptions));
+app.use(express.json());
 const io = new Server(httpServer, {
-    cors: {
-        origin: "http://localhost:5173", // Allow your frontend to connect
-        methods: ["GET", "POST"]
-    }
+    cors: corsOptions
 });
-// We can export 'io' so other parts of our app can use it to emit events
 export { io };
 io.on('connection', (socket) => {
     console.log(`⚡️ Client connected: ${socket.id}`);
@@ -29,28 +44,23 @@ io.on('connection', (socket) => {
         console.log(`🔥 Client disconnected: ${socket.id}`);
     });
 });
-app.use(cors());
-app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/activation', activationRoutes);
 app.get('/api/health', protect, (req, res) => {
-    res.status(200).json({ status: 'UP' });
+    res.status(200).json({ status: 'UP', user: req.user });
 });
 app.use('/api/factories', protect, authorize('ORG_ADMIN'), factoryRoutes);
-app.use('/api/invites', (req, res, next) => {
-    // If the request is to create an invite, apply protection.
-    if (req.method === 'POST' && req.path === '/') {
-        // Run middleware chain for this specific case
-        return protect(req, res, () => authorize('ORG_ADMIN', 'FACTORY_MANAGER')(req, res, next));
-    }
-    // For all other routes in this router (GET /verify, POST /accept), just proceed.
-    next();
-}, inviteRoutes);
+app.use('/api/users', protect, authorize('ORG_ADMIN'), userRoutes);
+app.use('/api/dashboard', protect, dashboardRoutes);
 app.use('/api/skills', protect, skillRoutes);
 app.use('/api/workers', protect, authorize('ORG_ADMIN', 'FACTORY_MANAGER'), workerRoutes);
 app.use('/api/tasks', protect, taskRoutes);
-app.use('/api/users', protect, authorize('ORG_ADMIN'), userRoutes);
-app.use('/api/dashboard', protect, dashboardRoutes);
+app.use('/api/invites', (req, res, next) => {
+    if (req.method === 'POST' && req.path === '/') {
+        return protect(req, res, () => authorize('ORG_ADMIN', 'FACTORY_MANAGER')(req, res, next));
+    }
+    next();
+}, inviteRoutes);
 httpServer.listen(PORT, () => {
     console.log(`🚀 Server is running on http://localhost:${PORT}`);
 });

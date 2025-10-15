@@ -1,4 +1,3 @@
-// src/routes/factory.routes.ts
 import { Router } from 'express';
 import { handleCreateFactory, handleGetFactories } from '../controllers/factory.controller.js';
 const router = Router();

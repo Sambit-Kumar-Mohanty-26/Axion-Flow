@@ -1,5 +1,4 @@
 import sgMail from '@sendgrid/mail';
-// Set the API key for the SendGrid library
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 if (!SENDGRID_API_KEY) {
     console.error("FATAL ERROR: SENDGRID_API_KEY is not defined.");
@@ -7,15 +6,12 @@ if (!SENDGRID_API_KEY) {
 else {
     sgMail.setApiKey(SENDGRID_API_KEY);
 }
-// --- IMPORTANT ---
-// Replace this with the email address you verified as a "Single Sender" in SendGrid.
 const VERIFIED_FROM_EMAIL = 'contact.axion.flow@gmail.com';
 export const sendInvitationEmail = async ({ to, token }) => {
     const invitationLink = `http://localhost:5173/accept-invite?token=${token}`;
-    // The 'msg' object is the email we are going to send.
     const msg = {
-        to: to, // The recipient's email
-        from: `Axion Flow <${VERIFIED_FROM_EMAIL}>`, // Your verified sender email
+        to: to,
+        from: `Axion Flow <${VERIFIED_FROM_EMAIL}>`,
         subject: 'You have been invited to join Axion Flow',
         html: `
         <div style="font-family: sans-serif; padding: 20px; color: #333;">
@@ -43,7 +39,6 @@ export const sendInvitationEmail = async ({ to, token }) => {
     }
     catch (error) {
         console.error("SendGrid API Error:", error);
-        // If there's an error, it might have more details in the response body
         if (error.response) {
             console.error(error.response.body);
         }

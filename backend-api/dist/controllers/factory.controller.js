@@ -1,10 +1,9 @@
-// src/controllers/factory.controller.ts
 import {} from 'express';
 import {} from '../middleware/auth.middleware.js';
 import * as factoryService from '../services/factory.service.js';
 export const handleCreateFactory = async (req, res) => {
     const { name } = req.body;
-    const organizationId = req.user?.organizationId; // Get org ID from the admin's token
+    const organizationId = req.user?.organizationId;
     if (!name) {
         return res.status(400).json({ message: 'Factory name is required' });
     }
@@ -20,7 +19,7 @@ export const handleCreateFactory = async (req, res) => {
     }
 };
 export const handleGetFactories = async (req, res) => {
-    const organizationId = req.user?.organizationId; // Get org ID from the admin's token
+    const organizationId = req.user?.organizationId;
     if (!organizationId) {
         return res.status(401).json({ message: 'Organization ID not found in token' });
     }

@@ -1,4 +1,3 @@
-// src/controllers/invite.controller.ts
 import {} from 'express';
 import {} from '../middleware/auth.middleware.js';
 import * as inviteService from '../services/invite.service.js';

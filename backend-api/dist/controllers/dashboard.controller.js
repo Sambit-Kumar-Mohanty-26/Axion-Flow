@@ -1,10 +1,6 @@
 import {} from 'express';
 import {} from '../middleware/auth.middleware.js';
 import * as dashboardService from '../services/dashboard.service.js';
-/**
- * Controller to handle requests for organization-wide analytics.
- * Extracts the organizationId from the authenticated user's token.
- */
 export const handleGetOrgAnalytics = async (req, res) => {
     const organizationId = req.user?.organizationId;
     if (!organizationId) {
@@ -19,10 +15,6 @@ export const handleGetOrgAnalytics = async (req, res) => {
         res.status(500).json({ message: 'Error fetching organization analytics.' });
     }
 };
-/**
- * Controller to handle requests for single-factory analytics.
- * Extracts the factoryId from the authenticated user's token.
- */
 export const handleGetFactoryAnalytics = async (req, res) => {
     const factoryId = req.user?.factoryId;
     if (!factoryId) {

@@ -1,4 +1,3 @@
-// src/controllers/activation.controller.ts
 import {} from 'express';
 import * as activationService from '../services/activation.service.js';
 export const handleVerifyEmployee = async (req, res) => {
