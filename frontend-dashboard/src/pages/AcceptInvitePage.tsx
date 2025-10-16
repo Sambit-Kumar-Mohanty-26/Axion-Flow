@@ -29,7 +29,7 @@ export const AcceptInvitePage = () => {
 
     const verifyToken = async () => {
       try {
-        const response = await axios.get(`http://localhost:3001/api/invites/verify/${token}`);
+        const response = await axios.get(`http://localhost:10000/api/invites/verify/${token}`);
         setEmail(response.data.email);
         setPageStatus('VALID');
       } catch (err) {

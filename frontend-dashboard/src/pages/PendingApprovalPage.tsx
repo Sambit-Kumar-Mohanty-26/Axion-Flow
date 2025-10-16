@@ -21,7 +21,7 @@ export const PendingApprovalPage = () => {
 
     const checkStatus = async () => {
       try {
-        const response = await axios.get(`http://localhost:3001/api/auth/status/${email}`);
+        const response = await axios.get(`http://localhost:10000/api/auth/status/${email}`);
         const newStatus = response.data.status as Status;
         
         if (newStatus === 'APPROVED' || newStatus === 'REJECTED') {
