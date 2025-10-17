@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
 import axionLogo from '../assets/logo.png';
-import axios from 'axios';
+import apiClient from '../api/apiClient';
 
 export const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -20,10 +20,10 @@ export const LoginPage = () => {
     setIsLoading(true);
 
     try {
-      const response = await axios.post(
-    `${import.meta.env.VITE_API_URL}/auth/login`, // Use the full path
-    { email, password }
-  );
+       const response = await apiClient.post('/auth/login', {
+    email,
+    password,
+  });
       setAuthToken(response.data.token);
       navigate('/dashboard');
     } catch (err) {

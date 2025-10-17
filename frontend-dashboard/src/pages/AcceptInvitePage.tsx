@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import apiClient from '../api/apiClient';
 import axionLogo from '../assets/logo.png';
 import { MailCheck, CheckCircle, XCircle, Loader } from 'lucide-react';
 
@@ -29,7 +29,7 @@ export const AcceptInvitePage = () => {
 
     const verifyToken = async () => {
       try {
-        const response = await axios.get(`http://localhost:10000/api/invites/verify/${token}`);
+        const response = await apiClient.get(`/invites/verify/${token}`);
         setEmail(response.data.email);
         setPageStatus('VALID');
       } catch (err) {
@@ -55,7 +55,7 @@ export const AcceptInvitePage = () => {
     setError('');
 
     try {
-      const response = await axios.post('http://localhost:3001/api/invites/accept', {
+      const response = await apiClient.post('/invites/accept', {
         token,
         password,
       });

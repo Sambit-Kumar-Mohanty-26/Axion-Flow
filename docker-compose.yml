@@ -1,5 +1,4 @@
 version: '3.8'
-
 services:
   postgres-db:
     image: postgres:14-alpine
@@ -10,34 +9,43 @@ services:
       POSTGRES_PASSWORD: password123
       POSTGRES_DB: axionflow
     ports:
-      - "5433:5432"
+      - "5433:5432" 
     volumes:
       - postgres_data:/var/lib/postgresql/data
-
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d axionflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
   backend:
     build: ./backend-api
     restart: always
+    env_file:
+      - ./backend-api/.env
     ports:
-      - "3001:3001" 
+      - "10000:10000"
     environment:
       - DATABASE_URL=postgresql://admin:password123@postgres-db:5432/axionflow
-      - JWT_SECRET=${JWT_SECRET}
-      - SCREENSHOTONE_API_KEY=${SCREENSHOTONE_API_KEY}
-      - SENDGRID_API_KEY=${SENDGRID_API_KEY}
     depends_on:
-      - postgres-db 
+      postgres-db:
+        condition: service_healthy 
 
   ai-service:
     build: ./ai-service
     restart: always
     ports:
-      - "8000:8000" 
+      - "8000:8000"
+    volumes:
+      - ./ai-service:/app
 
   frontend:
-    build: ./frontend-dashboard
+    build:
+     context: ./frontend-dashboard
+     dockerfile: Dockerfile
     restart: always
     ports:
-      - "5173:5173" 
+      - "5173:5173"
+    command: npm run dev -- --host
     depends_on:
       - backend
 

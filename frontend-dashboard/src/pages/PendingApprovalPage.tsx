@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import axios from 'axios';
 import { Loader, XCircle, ShieldCheck } from 'lucide-react';
+import apiClient from '../api/apiClient'; 
 
 type Status = 'PENDING' | 'APPROVED' | 'REJECTED' | 'ERROR';
 
@@ -12,6 +12,8 @@ export const PendingApprovalPage = () => {
   const navigate = useNavigate();
 
   const [status, setStatus] = useState<Status>('PENDING');
+  const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 5;
 
   useEffect(() => {
     if (!email) {
@@ -19,26 +21,45 @@ export const PendingApprovalPage = () => {
       return;
     }
 
+    let isMounted = true;
+    let intervalId: number | null = null;
+
     const checkStatus = async () => {
       try {
-        const response = await axios.get(`http://localhost:10000/api/auth/status/${email}`);
+        const response = await apiClient.get(`/auth/status/${email}`);
         const newStatus = response.data.status as Status;
         
+        if (!isMounted) return;
+        
+        setRetryCount(0); 
+
         if (newStatus === 'APPROVED' || newStatus === 'REJECTED') {
           setStatus(newStatus);
           if (intervalId) clearInterval(intervalId);
         }
       } catch (error) {
-        console.error("Error checking status:", error);
-        setStatus('ERROR');
-        if (intervalId) clearInterval(intervalId);
+        console.error(`Polling attempt ${retryCount + 1} failed:`, error);
+        
+        if (!isMounted) return;
+
+        const nextRetryCount = retryCount + 1;
+        setRetryCount(nextRetryCount);
+
+        if (nextRetryCount >= MAX_RETRIES) {
+          setStatus('ERROR');
+          if (intervalId) clearInterval(intervalId);
+        }
       }
     };
 
-    checkStatus(); 
-    const intervalId = setInterval(checkStatus, 5000); 
-    return () => clearInterval(intervalId);
-  }, [email]);
+    checkStatus();
+    intervalId = setInterval(checkStatus, 5000); 
+
+    return () => {
+      isMounted = false;
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [email, retryCount]);
 
   useEffect(() => {
     if (status === 'APPROVED') {
@@ -67,7 +88,7 @@ export const PendingApprovalPage = () => {
         return {
           icon: <XCircle className="mx-auto h-16 w-16 text-red-400" />,
           title: "An Error Occurred",
-          message: "Something went wrong. Please try signing up again or contact support.",
+          message: "Something went wrong while checking your status. Please try signing up again or contact support.",
         };
       case 'PENDING':
       default:

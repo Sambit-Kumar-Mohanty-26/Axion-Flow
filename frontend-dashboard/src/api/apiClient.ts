@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:10000/api';
 
 console.log("API Client is configured to use base URL:", baseURL);
 
