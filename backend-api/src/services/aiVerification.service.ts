@@ -3,6 +3,12 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+const PUBLIC_EMAIL_DOMAINS = [
+  'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com',
+  'icloud.com', 'aol.com', 'protonmail.com', 'zoho.com',
+  'live.com', 'msn.com'
+];
+
 async function getCompanyData(companyName: string): Promise<{ domain: string | null; name: string } | null> {
   try {
     const url = `https://autocomplete.clearbit.com/v1/companies/suggest?query=${encodeURIComponent(companyName)}`;
@@ -20,69 +26,64 @@ async function getCompanyData(companyName: string): Promise<{ domain: string | n
 async function verifyDomain(domain: string): Promise<boolean> {
   try {
     const apiKey = process.env.SCREENSHOTONE_API_KEY;
-    if (!apiKey) {
-        console.error("AI Verification Error: SCREENSHOTONE_API_KEY is not set.");
-        return false;
-    }
+    if (!apiKey) return false;
     const url = `https://api.screenshotone.com/take?access_key=${apiKey}&url=https://${domain}&full_page=false&block_ads=true&block_cookie_banners=true`;
     const response = await axios.get(url, { responseType: 'arraybuffer' });
     return response.status === 200 && response.data.byteLength > 2048;
   } catch (error) {
-    console.error(`AI Verification Error (Screenshot API for ${domain}):`, error);
     return false;
   }
 }
 
 export const runAiVerification = async (organizationId: string, userEmail: string, organizationName: string) => {
-  let approvalScore = 0;
+  let finalStatus = "PENDING";
   let verificationNotes: string[] = [];
-  const userDomain = userEmail.split('@')[1];
+  const userDomain = userEmail.split('@')[1].toLowerCase();
 
   console.log(`[AI Verification Started] for Org: "${organizationName}" by User: ${userEmail}`);
 
-  const companyData = await getCompanyData(organizationName);
+  if (PUBLIC_EMAIL_DOMAINS.includes(userDomain)) {
+    finalStatus = "REJECTED";
+    verificationNotes.push(`FAILURE: Public email domain (${userDomain}) is not allowed.`);
+    console.log(`❌ [AI Check FAILED] Blocked public domain.`);
+  } 
+  else {
+    const companyData = await getCompanyData(organizationName);
 
-  if (companyData && companyData.domain) {
-    verificationNotes.push(`Found official domain via Clearbit: ${companyData.domain}`);
- 
-    if (userDomain.toLowerCase() === companyData.domain.toLowerCase()) {
-      approvalScore += 2; 
-      verificationNotes.push(`SUCCESS: User email domain matches official company domain.`);
-      console.log(`✅ [AI Check PASSED] Domain match for ${userDomain}.`);
+    if (companyData && companyData.domain) {
+      if (userDomain === companyData.domain.toLowerCase()) {
+        finalStatus = "APPROVED";
+        verificationNotes.push(`SUCCESS: Validated employee of ${companyData.name} (${companyData.domain}).`);
+        console.log(`✅ [AI Check PASSED] Strict domain match confirmed.`);
+      } else {
+        finalStatus = "REJECTED";
+        verificationNotes.push(`FAILURE: Domain mismatch. Official is ${companyData.domain}, user is ${userDomain}.`);
+        console.log(`❌ [AI Check FAILED] Domain mismatch.`);
+      }
     } else {
-      verificationNotes.push(`WARNING: User email domain (${userDomain}) does not match official domain (${companyData.domain}).`);
-      console.log(`❌ [AI Check FAILED] Domain mismatch.`);
-    }
-  } else {
-    verificationNotes.push(`FAILURE: Could not find company data for "${organizationName}" in Clearbit.`);
-    console.log(`🟡 [AI Check INFO] Could not find "${organizationName}" in Clearbit. Proceeding to fallback check.`);
-  }
 
-  if (approvalScore === 0) {
-    const isDomainReal = await verifyDomain(userDomain);
-    if (isDomainReal) {
-      approvalScore += 1; 
-      verificationNotes.push(`INFO: User's email domain (${userDomain}) is a valid, live website.`);
-      console.log(`✅ [AI Check PASSED - Fallback] User domain ${userDomain} is a valid website.`);
-    } else {
-       verificationNotes.push(`FAILURE: User's email domain (${userDomain}) does not appear to be a valid website.`);
-       console.log(`❌ [AI Check FAILED - Fallback] User domain ${userDomain} is not a valid website.`);
+      console.log(`🟡 [AI Check INFO] Unknown company. Checking domain validity via ScreenshotOne.`);
+      
+      const isDomainReal = await verifyDomain(userDomain);
+
+      if (isDomainReal) {
+        finalStatus = "APPROVED";
+        verificationNotes.push(`SUCCESS: "${organizationName}" not in database, but ${userDomain} is a valid active website.`);
+        console.log(`✅ [AI Check PASSED] Validated unknown business domain.`);
+      } else {
+        finalStatus = "REJECTED";
+        verificationNotes.push(`FAILURE: Company unknown and domain (${userDomain}) is inactive.`);
+        console.log(`❌ [AI Check FAILED] Domain invalid.`);
+      }
     }
   }
-
-  const finalStatus = approvalScore >= 1 ? "APPROVED" : "REJECTED";
-  console.log(`[AI Verification Complete] Final Score: ${approvalScore}. Decision: ${finalStatus}`);
 
   await prisma.organization.update({
     where: { id: organizationId },
     data: {
       status: finalStatus,
-      factories: {
-        updateMany: { where: { status: "PENDING" }, data: { status: finalStatus } }
-      },
-      users: {
-        updateMany: { where: { status: "PENDING" }, data: { status: finalStatus } }
-      }
+      factories: { updateMany: { where: { status: "PENDING" }, data: { status: finalStatus } } },
+      users: { updateMany: { where: { status: "PENDING" }, data: { status: finalStatus } } }
     }
   });
 
