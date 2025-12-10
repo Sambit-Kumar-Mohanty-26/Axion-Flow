@@ -10,9 +10,7 @@ services:
       path: /api/health
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: axion-flow-main-db
-          property: connectionString
+        sync: false
       - key: AI_SERVICE_URL
         value: http://axion-flow-ai-service-app:8000
 
@@ -21,6 +19,18 @@ services:
       - key: SCREENSHOTONE_API_KEY
         sync: false
       - key: SENDGRID_API_KEY
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+      - key: FRONTEND_URL 
         sync: false
      
 
@@ -31,8 +41,3 @@ services:
     plan: free
     rootDir: ./ai-service
     dockerfilePath: ./Dockerfile
-
-# Defines the database
-databases:
-  - name: axion-flow-main-db
-    plan: free
