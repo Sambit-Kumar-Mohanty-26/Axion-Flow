@@ -1,25 +1,18 @@
 import nodemailer from 'nodemailer';
 
-const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM } = process.env;
+const { SMTP_USER, SMTP_PASS, SMTP_FROM, FRONTEND_URL } = process.env;
 
-if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
-  console.warn("⚠️  SMTP Configuration is missing in .env file. Emails will not be sent.");
+if (!SMTP_USER || !SMTP_PASS) {
+  console.error("FATAL ERROR: SMTP_USER or SMTP_PASS is missing.");
 }
 
 const transporter = nodemailer.createTransport({
-  host: SMTP_HOST || 'smtp.gmail.com',
-  port: Number(SMTP_PORT) || 587,
-  secure: false,
+  service: 'gmail',
   auth: {
     user: SMTP_USER,
     pass: SMTP_PASS,
   },
-  tls: {
-    rejectUnauthorized: false, 
-    ciphers: 'SSLv3' 
-  },
-  family: 4, 
-} as any);
+});
 
 interface SendInvitationEmailParams {
   to: string;
@@ -27,11 +20,11 @@ interface SendInvitationEmailParams {
 }
 
 export const sendInvitationEmail = async ({ to, token }: SendInvitationEmailParams) => {
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-  const invitationLink = `${frontendUrl}/accept-invite?token=${token}`;
+  const baseUrl = FRONTEND_URL || 'http://localhost:5173';
+  const invitationLink = `${baseUrl}/accept-invite?token=${token}`;
 
   const mailOptions = {
-    from: `"Axion Flow" <${SMTP_FROM}>`, 
+    from: `"Axion Flow" <${SMTP_USER}>`,
     to: to,
     subject: 'You have been invited to join Axion Flow',
     html: `
@@ -60,10 +53,10 @@ export const sendInvitationEmail = async ({ to, token }: SendInvitationEmailPara
 
   try {
     const info = await transporter.sendMail(mailOptions);
-    console.log(`✅ [Email Service] Invitation sent to ${to}. Message ID: ${info.messageId}`);
+    console.log(`✅ [Email Service] Sent to ${to}. ID: ${info.messageId}`);
     return info;
   } catch (error) {
-    console.error("❌ [Email Service] Failed to send email:", error);
-    throw new Error("Failed to deliver invitation email.");
+    console.error("❌ [Email Service] Error:", error);
+    throw new Error("Email sending failed."); 
   }
 };
