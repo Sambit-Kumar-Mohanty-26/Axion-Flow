@@ -13,6 +13,7 @@ import workerRoutes from './routes/worker.routes.js';
 import taskRoutes from './routes/task.routes.js';
 import inviteRoutes from './routes/invite.routes.js'; 
 import publicInviteRoutes from './routes/publicInvite.routes.js'; 
+import { startDataFeeder } from './utils/data-feeder.js';
 
 const app = express();
 const PORT = 10000; 
@@ -63,4 +64,5 @@ apiRouter.use('/invites', authorize('ORG_ADMIN', 'FACTORY_MANAGER'), inviteRoute
 app.use('/api', apiRouter);
 httpServer.listen(PORT, () => {
   console.log(`🚀 Server is running on http://localhost:${PORT}`);
+  startDataFeeder();
 });
