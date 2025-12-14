@@ -7,6 +7,7 @@ import { Button } from '../components/Button';
 import { LiveStatus } from '../components/LiveStatus';
 import logo from '../assets/logo.png';
 import heroImage from '../assets/hero-image.png';
+import { DigitalCore } from '../components/3d/DigitalCore';
 
 export const Hero = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -15,8 +16,8 @@ export const Hero = () => {
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
 
-  const rotateX = useTransform(mouseY, [- window.innerHeight / 2, window.innerHeight / 2], [5, -5]);
-  const rotateY = useTransform(mouseX, [- window.innerWidth / 2, window.innerWidth / 2], [-5, 5]);
+  const rotateX = useTransform(mouseY, [-window.innerHeight / 2, window.innerHeight / 2], [5, -5]);
+  const rotateY = useTransform(mouseX, [-window.innerWidth / 2, window.innerWidth / 2], [-5, 5]);
 
   const handleMouseMove = (event: React.MouseEvent) => {
     const { clientX, clientY, currentTarget } = event;
@@ -42,9 +43,7 @@ export const Hero = () => {
     visible: { y: 0, opacity: 1, transition: { type: 'spring', stiffness: 100 } },
   };
 
-
   return (
-    
     <div 
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
@@ -55,7 +54,9 @@ export const Hero = () => {
       <div aria-hidden="true" className="absolute -top-1/4 -left-1/4 w-1/2 h-1/2 bg-blue-600/30 rounded-full filter blur-3xl animate-blob-spin"></div>
       <div aria-hidden="true" className="absolute -bottom-1/4 -right-1/4 w-1/2 h-1/2 bg-teal-500/30 rounded-full filter blur-3xl animate-blob-spin" style={{ animationDelay: '4s', animationDuration: '25s' }}></div>
 
-      <motion.header /* ... */ className="absolute top-0 left-0 w-full z-30 py-4 px-4 sm:px-8">
+      <DigitalCore />
+
+      <motion.header initial={{ y: -100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5, ease: 'easeOut' }} className="absolute top-0 left-0 w-full z-30 py-4 px-4 sm:px-8">
         <div className="container mx-auto flex justify-between items-center">
           <a href="#" className="flex items-center gap-3"><img src={logo} alt="Axion Flow Logo" className="h-8 w-8" /><span className="text-xl font-bold">Axion Flow</span></a>
           <nav className="hidden md:flex items-center space-x-6 text-sm">{navLinks.map(link => <a key={link} href={`#${link.toLowerCase().replace(/\s+/g, '-')}`} className="hover:text-blue-400 transition-colors">{link}</a>)}</nav>
@@ -112,7 +113,7 @@ export const Hero = () => {
             <LiveStatus />
           </motion.div>
           <motion.div variants={itemVariants} className="mt-6 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
-            <Link to="/login">
+            <Link to="/signup">
                 <Button variant="primary">
                 <span className="flex items-center gap-2">Request a Demo <span className="group-hover:translate-x-1 transition-transform">→</span></span>
                 </Button>

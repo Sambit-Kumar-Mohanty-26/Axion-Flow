@@ -13,6 +13,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { FactoriesPage } from './pages/admin/FactoriesPage';
 import { UsersPage } from './pages/admin/UsersPage';
 import { WorkersPage } from './pages/manager/WorkersPage';
+import { SmoothScroll } from './components/layout/SmoothScroll';
 
 
 const PrivateRoute = ({ children }: { children: ReactElement }) => {
@@ -28,6 +29,7 @@ const PrivateRoute = ({ children }: { children: ReactElement }) => {
 
 function App() {
   return (
+  <SmoothScroll>
     <Router>
       <div className="bg-gray-900 min-h-screen">
         <Routes>
@@ -57,6 +59,7 @@ function App() {
         </Routes>
       </div>
     </Router>
+  </SmoothScroll>
   );
 }
 
