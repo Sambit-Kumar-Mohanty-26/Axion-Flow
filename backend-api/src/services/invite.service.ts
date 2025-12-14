@@ -6,9 +6,15 @@ import { sendInvitationEmail } from './email.service.js';
 
 const prisma = new PrismaClient();
 
-export const createInvitation = async (email: string, role: Role, factoryId: string, organizationId: string) => {
+export const createInvitation = async (
+  email: string, 
+  role: Role, 
+  factoryId: string, 
+  organizationId: string,
+  inviterEmail: string, 
+  organizationName: string
+) => {
   const token = crypto.randomBytes(32).toString('hex');
-
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
   const factory = await prisma.factory.findFirst({
@@ -29,7 +35,12 @@ export const createInvitation = async (email: string, role: Role, factoryId: str
   });
 
   try {
-    await sendInvitationEmail({ to: email, token: token });
+    await sendInvitationEmail({ 
+      to: email, 
+      token: token,
+      inviterEmail: inviterEmail,
+      orgName: organizationName
+    });
   } catch (emailError) {
     console.error(`CRITICAL: Failed to send invitation email for token ${token}`, emailError);
   }

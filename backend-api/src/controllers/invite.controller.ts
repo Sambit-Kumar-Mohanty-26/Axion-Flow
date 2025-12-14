@@ -1,21 +1,45 @@
 import { type Request, type Response } from 'express';
 import { type AuthRequest } from '../middleware/auth.middleware.js';
 import * as inviteService from '../services/invite.service.js';
-import { Role } from '@prisma/client';
+import { Role, PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 export const handleCreateInvite = async (req: AuthRequest, res: Response) => {
   const { email, role, factoryId } = req.body;
   const organizationId = req.user?.organizationId;
-
-  if (!email || !role || !factoryId || !organizationId) {
-    return res.status(400).json({ message: 'Email, role, and factoryId are required.' });
+  const inviterId = req.user?.userId;
+  if (!email || !role || !factoryId || !organizationId || !inviterId) {
+    return res.status(400).json({ message: 'Missing required information or invalid session.' });
   }
   if (!Object.values(Role).includes(role)) {
     return res.status(400).json({ message: 'Invalid role specified.' });
   }
 
   try {
-    const invitation = await inviteService.createInvitation(email, role, factoryId, organizationId);
+    const org = await prisma.organization.findUnique({
+      where: { id: organizationId },
+      select: { name: true }
+    });
+
+    const inviter = await prisma.user.findUnique({
+      where: { id: inviterId },
+      select: { email: true }
+    });
+
+    if (!org || !inviter) {
+       return res.status(404).json({ message: 'Organization or Inviter not found.' });
+    }
+
+    const invitation = await inviteService.createInvitation(
+      email, 
+      role, 
+      factoryId, 
+      organizationId,
+      inviter.email, 
+      org.name       
+    );
+    
     res.status(201).json(invitation);
   } catch (error: any) {
     res.status(500).json({ message: 'Error creating invitation', error: error.message });
