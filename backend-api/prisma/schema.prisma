@@ -85,7 +85,7 @@ model Worker {
   userId           String?       @unique 
   user             User?         @relation(fields: [userId], references: [id])
   skills           WorkerSkill[]
-  assignedTask     Task?
+  tasks            Task[]        @relation("WorkerTasks")
 
   factoryId        String
   factory          Factory       @relation(fields: [factoryId], references: [id])
@@ -98,13 +98,18 @@ model Task {
   status           TaskStatus    @default(PENDING)
   priority         TaskPriority  @default(MEDIUM)
   requiredSkillId  String?
-  assignedWorkerId String?       @unique
 
   requiredSkill    Skill?        @relation(fields: [requiredSkillId], references: [id])
-  assignedWorker   Worker?       @relation(fields: [assignedWorkerId], references: [id])
+
+  location_x       Float         @default(50.0)
+  location_y       Float         @default(50.0)
   
   factoryId        String
   factory          Factory       @relation(fields: [factoryId], references: [id])
+
+  progress         Int           @default(0)
+
+  workers          Worker[]      @relation("WorkerTasks")
 }
 
 

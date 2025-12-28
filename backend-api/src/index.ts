@@ -56,7 +56,7 @@ apiRouter.get('/health', (req, res) => { res.status(200).json({ status: 'UP' });
 apiRouter.use(protect);
 apiRouter.use('/dashboard', dashboardRoutes);
 apiRouter.use('/skills', skillRoutes);
-apiRouter.use('/tasks', taskRoutes);
+apiRouter.use('/tasks', protect, taskRoutes);
 apiRouter.use('/factories', authorize('ORG_ADMIN'), factoryRoutes);
 apiRouter.use('/users', authorize('ORG_ADMIN'), userRoutes);
 apiRouter.use('/workers', authorize('ORG_ADMIN', 'FACTORY_MANAGER'), workerRoutes);

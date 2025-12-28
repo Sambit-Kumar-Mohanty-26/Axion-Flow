@@ -26,6 +26,8 @@ services:
       - "10000:10000"
     environment:
       - DATABASE_URL=postgresql://admin:password123@postgres-db:5432/axionflow
+      - AI_SERVICE_URL=http://ai-service:8000
+      - PORT=10000
     depends_on:
       postgres-db:
         condition: service_healthy 

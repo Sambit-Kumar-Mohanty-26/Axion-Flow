@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE "Task" ADD COLUMN     "location_x" DOUBLE PRECISION NOT NULL DEFAULT 50.0,
+ADD COLUMN     "location_y" DOUBLE PRECISION NOT NULL DEFAULT 50.0;
+
+-- AddForeignKey
+ALTER TABLE "Invitation" ADD CONSTRAINT "Invitation_factoryId_fkey" FOREIGN KEY ("factoryId") REFERENCES "Factory"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

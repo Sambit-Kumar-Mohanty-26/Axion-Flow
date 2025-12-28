@@ -1,5 +1,5 @@
 import { PrismaClient, TaskPriority } from '@prisma/client';
-import { io } from '../index.js'; 
+import { io } from '../index.js';
 
 const prisma = new PrismaClient();
 
@@ -7,20 +7,18 @@ interface CreateTaskInput {
   description: string;
   priority?: TaskPriority;
   requiredSkillId?: string;
+  location_x?: number;
+  location_y?: number;
 }
 
 export const getAllTasks = async (factoryId: string) => {
   return await prisma.task.findMany({
-    where: { 
-      factoryId: factoryId 
-    },
+    where: { factoryId },
     include: {
       requiredSkill: true,
-      assignedWorker: true,
+      workers: true,
     },
-    orderBy: {
-      priority: 'desc',
-    },
+    orderBy: { priority: 'desc' },
   });
 };
 
@@ -31,53 +29,68 @@ export const createTask = async (taskData: CreateTaskInput, factoryId: string) =
       priority: taskData.priority,
       requiredSkillId: taskData.requiredSkillId,
       factoryId: factoryId,
+      location_x: taskData.location_x ?? 50.0,
+      location_y: taskData.location_y ?? 50.0,
+      progress: 0,
+      status: 'PENDING'
     },
+    include: { workers: true, requiredSkill: true }
   });
 
   io.emit('task:create', newTask);
   console.log(`📢 Emitted task:create for new Task ID: ${newTask.id}`);
-
   return newTask;
 };
 
 export const assignTaskToWorker = async (taskId: string, workerId: string, factoryId: string) => {
-  const [updatedTask, updatedWorker] = await prisma.$transaction(async (tx) => {
-    const task = await tx.task.findFirst({
-        where: { id: taskId, factoryId: factoryId }
-    });
-    if (!task) {
-        throw new Error("Task not found or you do not have permission to access it.");
-    }
+  const result = await prisma.$transaction(async (tx) => {
+    const task = await tx.task.findFirst({ where: { id: taskId, factoryId } });
+    if (!task) throw new Error("Task not found or permission denied.");
 
-     const worker = await tx.worker.findFirst({
-        where: { id: workerId, factoryId: factoryId }
-    });
-    if (!worker) {
-        throw new Error("Worker not found or you do not have permission to assign them.");
-    }
+    const worker = await tx.worker.findFirst({ where: { id: workerId, factoryId } });
+    if (!worker) throw new Error("Worker not found or permission denied.");
 
-    const newUpdatedTask = await tx.task.update({
+    const updatedTask = await tx.task.update({
       where: { id: taskId },
       data: {
-        assignedWorkerId: workerId,
         status: 'IN_PROGRESS',
+        workers: {
+            connect: { id: workerId }
+        }
       },
-      include: { assignedWorker: true, requiredSkill: true } 
+      include: { workers: true, requiredSkill: true } 
     });
     
-    const newUpdatedWorker = await tx.worker.update({
+    const updatedWorker = await tx.worker.update({
       where: { id: workerId },
-      data: {
-        status: 'ON_TASK',
-      },
+      data: { status: 'ON_TASK' },
     });
 
-    return [newUpdatedTask, newUpdatedWorker];
+    return { updatedTask, updatedWorker };
   });
 
-  io.emit('task:update', updatedTask);
-  io.emit('worker:update', updatedWorker);
-  console.log(`📢 Emitted task:update and worker:update for Task ID: ${updatedTask.id}`);
-
-  return updatedTask;
+  io.emit('task:update', result.updatedTask);
+  io.emit('worker:update', result.updatedWorker);
+  console.log(`📢 Assigned Worker ${workerId} to Task ${taskId}`);
+  
+  return result.updatedTask;
 };
+
+export const deleteTask = async (taskId: string, factoryId: string) => {
+  const task = await prisma.task.findFirst({ where: { id: taskId, factoryId } });
+  if (!task) throw new Error("Task not found.");
+
+  await prisma.task.delete({ where: { id: taskId } });
+  io.emit('task:delete', { id: taskId });
+  return { message: "Task deleted" };
+};
+
+export const updateTaskStatus = async (taskId: string, status: string, factoryId: string) => {
+    const updatedTask = await prisma.task.update({
+        where: { id: taskId },
+        data: { status: status as any },
+        include: { workers: true }
+    });
+    io.emit('task:update', updatedTask);
+    return updatedTask;
+}

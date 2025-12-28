@@ -1,10 +1,13 @@
 import { useState, useEffect, type ReactNode } from 'react';
 import apiClient from '../../api/apiClient';
 import { motion } from 'framer-motion';
-import { Building, Users, ListChecks, CheckCircle } from 'lucide-react';
+import { Building, Users, ListChecks, CheckCircle, Plus, Wrench } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { FactoryMap } from '../../components/dashboard/FactoryMap';
 import { TaskList } from '../../components/dashboard/TaskList';
+import { useSocket } from '../../context/SocketContext';
+import { CreateTaskModal } from '../../components/modals/CreateTaskModal';
+import { ManageSkillsModal } from '../../components/modals/ManageSkillsModal';
 
 interface StatCardProps {
   icon: ReactNode;
@@ -30,11 +33,15 @@ const StatCard = ({ icon, title, value, unit = '' }: StatCardProps) => (
 
 export const ManagerDashboard = () => {
   const { user } = useAuth();
+  const socket = useSocket();
   const [analytics, setAnalytics] = useState<any>(null);
   const [workers, setWorkers] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [isSkillsModalOpen, setIsSkillsModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -50,7 +57,6 @@ export const ManagerDashboard = () => {
         setTasks(tasksRes.data);
       } catch (err) {
         setError("Failed to load dashboard data.");
-        console.error(err);
       } finally {
         setIsLoading(false);
       }
@@ -59,10 +65,38 @@ export const ManagerDashboard = () => {
     fetchDashboardData();
   }, []);
 
-  if (isLoading) return <div className="text-center p-8">Loading Factory Dashboard...</div>;
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleTaskCreate = (newTask: any) => {
+        setTasks(prev => [newTask, ...prev]);
+    };
+    
+    const handleTaskUpdate = (updatedTask: any) => {
+        setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
+    };
+
+    const handleWorkerUpdate = (updatedWorker: any) => {
+        setWorkers(prev => prev.map(w => w.id === updatedWorker.id ? updatedWorker : w));
+    };
+
+    socket.on('task:create', handleTaskCreate);
+    socket.on('task:update', handleTaskUpdate);
+    socket.on('worker:update', handleWorkerUpdate);
+
+    return () => {
+        socket.off('task:create', handleTaskCreate);
+        socket.off('task:update', handleTaskUpdate);
+        socket.off('worker:update', handleWorkerUpdate);
+    };
+  }, [socket]);
+
+
+  if (isLoading) return <div className="text-center p-8 text-gray-400">Loading Factory Dashboard...</div>;
   if (error) return <div className="text-center p-8 text-red-400">{error}</div>;
 
   return (
+    <>
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -90,12 +124,43 @@ export const ManagerDashboard = () => {
         </div>
 
         <div className="flex flex-col h-[600px]">
-          <h2 className="text-xl font-bold text-white mb-4">High Priority Tasks</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-white">High Priority Tasks</h2>
+            
+            <div className="flex gap-2">
+              <button 
+                  onClick={() => setIsSkillsModalOpen(true)}
+                  className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition-colors border border-white/10"
+                  title="Manage Skills"
+              >
+                  <Wrench size={20} />
+              </button>
+
+              <button 
+                  onClick={() => setIsTaskModalOpen(true)}
+                  className="p-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-white transition-colors shadow-lg shadow-blue-500/20"
+                  title="Create New Task"
+              >
+                  <Plus size={20} />
+              </button>
+            </div>
+
+          </div>
           <div className="flex-1 bg-gray-800/50 rounded-xl border border-white/10 p-4 overflow-hidden">
              <TaskList tasks={tasks} />
           </div>
         </div>
       </div>
     </motion.div>
+
+    <CreateTaskModal 
+        isOpen={isTaskModalOpen} 
+        onClose={() => setIsTaskModalOpen(false)} 
+    />
+    <ManageSkillsModal 
+        isOpen={isSkillsModalOpen} 
+        onClose={() => setIsSkillsModalOpen(false)} 
+    />
+    </>
   );
 };

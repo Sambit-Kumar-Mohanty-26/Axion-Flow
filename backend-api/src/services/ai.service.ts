@@ -1,13 +1,14 @@
 import axios from 'axios';
 import { type Task, type Worker, type WorkerSkill, type Skill } from '@prisma/client';
 
-const AI_SERVICE_URL = 'http://localhost:8000';
+const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
 
 interface RecommendationResponse {
   recommended_worker_id: string | null;
   score?: number;
   worker_name?: string;
 }
+
 type WorkerWithSkills = Worker & {
   skills: (WorkerSkill & { skill: Skill })[];
 };
@@ -22,7 +23,7 @@ export const getRecommendationFromAI = async (
       available_workers: workers,
     };
 
-    console.log('Sending payload to AI service:', JSON.stringify(payload, null, 2));
+    console.log('Sending payload to AI service...');
 
     const response = await axios.post<RecommendationResponse>(
       `${AI_SERVICE_URL}/api/recommend_worker`,
@@ -34,6 +35,6 @@ export const getRecommendationFromAI = async (
 
   } catch (error) {
     console.error('Error communicating with AI service:', error);
-    return null; 
+    return null;
   }
 };
