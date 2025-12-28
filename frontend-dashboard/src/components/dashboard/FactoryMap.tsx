@@ -25,8 +25,12 @@ export const FactoryMap = ({ initialWorkers, isLoading }: FactoryMapProps) => {
   }, [initialWorkers]);
 
   useEffect(() => {
-    apiClient.get('/skills').then(res => setAvailableSkills(res.data)).catch(console.error);
-  }, []);
+    if (isAddingSkill) {
+      apiClient.get('/skills')
+        .then(res => setAvailableSkills(res.data))
+        .catch(console.error);
+    }
+  }, [isAddingSkill]);
 
   useEffect(() => {
     if (!socket) return;
