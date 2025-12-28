@@ -3,7 +3,7 @@ import { io } from '../index.js';
 
 const prisma = new PrismaClient();
 
-const UPDATE_INTERVAL_MS = 10000;
+const UPDATE_INTERVAL_MS = 3000;
 const MOVE_STEP = 5;
 
 const clamp = (num: number, min: number, max: number) => Math.min(Math.max(num, min), max);
