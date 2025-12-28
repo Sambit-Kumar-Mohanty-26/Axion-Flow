@@ -62,6 +62,12 @@ apiRouter.use('/users', authorize('ORG_ADMIN'), userRoutes);
 apiRouter.use('/workers', authorize('ORG_ADMIN', 'FACTORY_MANAGER'), workerRoutes);
 apiRouter.use('/invites', authorize('ORG_ADMIN', 'FACTORY_MANAGER'), inviteRoutes); 
 app.use('/api', apiRouter);
+console.log("--- DEBUGGING RENDER ENVIRONMENT ---");
+Object.keys(process.env).forEach(key => {
+  if (key.includes('AXION') || key.includes('SERVICE') || key.includes('HOST')) {
+    console.log(`${key}: ${process.env[key]}`);
+  }
+});
 httpServer.listen(PORT, () => {
   console.log(`🚀 Server is running on http://localhost:${PORT}`);
   startDataFeeder();
