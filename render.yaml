@@ -32,12 +32,3 @@ services:
         sync: false
       - key: FRONTEND_URL 
         sync: false
-     
-
-  # 2. The AI Service
-  - name: axion-flow-ai-service-app
-    type: web
-    runtime: docker
-    plan: free
-    rootDir: ./ai-service
-    dockerfilePath: ./Dockerfile
