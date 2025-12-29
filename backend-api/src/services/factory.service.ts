@@ -21,3 +21,18 @@ export const getFactoriesByOrg = async (organizationId: string) => {
   });
   return factories;
 };
+
+export const getFactoryById = async (factoryId: string) => {
+  return await prisma.factory.findUnique({
+    where: { id: factoryId }
+  });
+};
+
+export const updateFactoryLayout = async (factoryId: string, layout: any) => {
+  const updatedFactory = await prisma.factory.update({
+    where: { id: factoryId },
+    data: { layout }
+  });
+  
+  return updatedFactory;
+};

@@ -1,4 +1,7 @@
-import { type Task, type Worker, type WorkerSkill, type Skill } from '@prisma/client';
+import { type Task, type Worker, type WorkerSkill, type Skill, PrismaClient } from '@prisma/client';
+import { createGridFromLayout, calculateAStarDistance } from '../utils/factory-grid.js'; // Import our A* utils
+
+const prisma = new PrismaClient();
 
 interface RecommendationResponse {
   recommended_worker_id: string | null;
@@ -15,10 +18,17 @@ export const getRecommendationFromAI = async (
   task: Task,
   workers: WorkerWithSkills[]
 ): Promise<RecommendationResponse | null> => {
-  console.log(`🧠 AI Engine (Internal): Analyzing ${workers.length} workers for task '${task.description}'...`);
+  console.log(`🧠 AI Engine: Analyzing ${workers.length} workers via A* Pathfinding...`);
 
   let bestWorker: WorkerWithSkills | null = null;
   let highestScore = -1;
+
+  const factory = await prisma.factory.findUnique({
+    where: { id: task.factoryId },
+    select: { layout: true }
+  });
+
+  const grid = createGridFromLayout(factory?.layout as any[]);
 
   const WEIGHT_SKILL = 0.5;
   const WEIGHT_FATIGUE = 0.3;
@@ -37,7 +47,6 @@ export const getRecommendationFromAI = async (
         skillScore = matchingSkill.proficiency / 5.0;
         hasRequiredSkill = true;
       }
-      
       if (!hasRequiredSkill) continue;
     } else {
       skillScore = 1.0; 
@@ -45,17 +54,16 @@ export const getRecommendationFromAI = async (
     const fatigueScore = 1.0 - (worker.fatigueLevel || 0);
     const workerX = worker.location_x || 0;
     const workerY = worker.location_y || 0;
+    
+    const steps = calculateAStarDistance(workerX, workerY, taskX, taskY, grid);
 
-    const distance = Math.sqrt(Math.pow(workerX - taskX, 2) + Math.pow(workerY - taskY, 2));
-
-    const distanceScore = Math.max(0, 1.0 - (distance / 141.0));
+    const distanceScore = Math.max(0, 1.0 - (steps / 200.0));
 
     const totalScore = (
       (skillScore * WEIGHT_SKILL) +
       (fatigueScore * WEIGHT_FATIGUE) +
       (distanceScore * WEIGHT_DISTANCE)
     );
-
     if (totalScore > highestScore) {
       highestScore = totalScore;
       bestWorker = worker;

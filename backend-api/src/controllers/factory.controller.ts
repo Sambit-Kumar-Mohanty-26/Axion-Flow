@@ -35,3 +35,37 @@ export const handleGetFactories = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ message: 'Error fetching factories', error });
   }
 };
+
+
+export const handleUpdateLayout = async (req: AuthRequest, res: Response) => {
+  const { layout } = req.body;
+  const factoryId = req.user?.factoryId;
+
+  if (!factoryId) {
+    return res.status(401).json({ message: 'Factory ID not found in token. Please log in as a Manager.' });
+  }
+
+  try {
+    const factory = await factoryService.updateFactoryLayout(factoryId, layout);
+    res.status(200).json(factory);
+  } catch (error) {
+    console.error("Layout Update Error:", error);
+    res.status(500).json({ message: 'Failed to save layout.' });
+  }
+};
+
+export const handleGetLayout = async (req: AuthRequest, res: Response) => {
+  const factoryId = req.user?.factoryId;
+
+  if (!factoryId) {
+    return res.status(401).json({ message: 'Factory ID not found in token.' });
+  }
+
+  try {
+    const factory = await factoryService.getFactoryById(factoryId);
+    res.status(200).json(factory?.layout || []);
+  } catch (error) {
+    console.error("Layout Fetch Error:", error);
+    res.status(500).json({ message: 'Failed to fetch layout.' });
+  }
+};

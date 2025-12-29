@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { io } from '../index.js';
+import { createGridFromLayout } from './factory-grid.js';
 
 const prisma = new PrismaClient();
 
@@ -21,10 +22,16 @@ export const startDataFeeder = () => {
 
   setInterval(async () => {
     try {
-      const workers = await prisma.worker.findMany();
+      const factories = await prisma.factory.findMany({
+        include: { workers: true }
+      });
 
-      if (workers.length > 0) {
-        await Promise.all(workers.map(async (worker) => {
+      for (const factory of factories) {
+        if (factory.workers.length === 0) continue;
+
+        const grid = createGridFromLayout(factory.layout as any[]);
+
+        await Promise.all(factory.workers.map(async (worker) => {
           if (worker.status === 'ABSENT') return;
 
           let { location_x, location_y } = worker;
@@ -32,18 +39,18 @@ export const startDataFeeder = () => {
           const deltaX = (Math.random() * MOVE_STEP * 2) - MOVE_STEP;
           const deltaY = (Math.random() * MOVE_STEP * 2) - MOVE_STEP;
 
-          location_x += deltaX;
-          location_y += deltaY;
+          const nextX = clamp(location_x + deltaX, 0, 99);
+          const nextY = clamp(location_y + deltaY, 0, 99);
 
-          location_x = clamp(location_x, 0, 100);
-          location_y = clamp(location_y, 0, 100);
+          if (grid.isWalkableAt(Math.floor(nextX), Math.floor(nextY))) {
+            location_x = nextX;
+            location_y = nextY;
+          } else {
+          }
 
           const updatedWorker = await prisma.worker.update({
             where: { id: worker.id },
-            data: {
-              location_x,
-              location_y
-            },
+            data: { location_x, location_y },
             include: { skills: { include: { skill: true } } } 
           });
           
@@ -53,10 +60,7 @@ export const startDataFeeder = () => {
 
       const activeTasks = await prisma.task.findMany({
         where: { status: 'IN_PROGRESS' },
-        include: { 
-          workers: true,
-          requiredSkill: true 
-        }
+        include: { workers: true, requiredSkill: true }
       });
 
       for (const task of activeTasks) {
@@ -64,7 +68,6 @@ export const startDataFeeder = () => {
         let newProgress = (task.progress || 0) + increment;
 
         if (newProgress >= 100) {
-          newProgress = 100;
           const completedTask = await prisma.task.update({
             where: { id: task.id },
             data: { status: 'COMPLETED', progress: 100 },
@@ -81,7 +84,6 @@ export const startDataFeeder = () => {
                 io.emit('worker:update', freedWorker);
             }
           }
-
           io.emit('task:update', completedTask);
           console.log(`✅ Simulation: Task Completed - ${task.description}`);
 
@@ -91,7 +93,6 @@ export const startDataFeeder = () => {
             data: { progress: newProgress },
             include: { workers: true, requiredSkill: true }
           });
-
           io.emit('task:update', updatedTask);
         }
       }
