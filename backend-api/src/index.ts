@@ -57,7 +57,7 @@ apiRouter.use(protect);
 apiRouter.use('/dashboard', dashboardRoutes);
 apiRouter.use('/skills', skillRoutes);
 apiRouter.use('/tasks', protect, taskRoutes);
-apiRouter.use('/factories', authorize('ORG_ADMIN'), factoryRoutes);
+apiRouter.use('/factories', protect, factoryRoutes);
 apiRouter.use('/users', authorize('ORG_ADMIN'), userRoutes);
 apiRouter.use('/workers', authorize('ORG_ADMIN', 'FACTORY_MANAGER'), workerRoutes);
 apiRouter.use('/invites', authorize('ORG_ADMIN', 'FACTORY_MANAGER'), inviteRoutes); 
