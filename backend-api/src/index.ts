@@ -14,6 +14,7 @@ import taskRoutes from './routes/task.routes.js';
 import inviteRoutes from './routes/invite.routes.js'; 
 import publicInviteRoutes from './routes/publicInvite.routes.js'; 
 import { startDataFeeder } from './utils/data-feeder.js';
+import analyticsRoutes from './routes/analytics.routes.js';
 
 const app = express();
 const PORT = 10000; 
@@ -61,6 +62,7 @@ apiRouter.use('/factories', protect, factoryRoutes);
 apiRouter.use('/users', authorize('ORG_ADMIN'), userRoutes);
 apiRouter.use('/workers', authorize('ORG_ADMIN', 'FACTORY_MANAGER'), workerRoutes);
 apiRouter.use('/invites', authorize('ORG_ADMIN', 'FACTORY_MANAGER'), inviteRoutes); 
+apiRouter.use('/analytics', protect, authorize('ORG_ADMIN', 'FACTORY_MANAGER'), analyticsRoutes);
 app.use('/api', apiRouter);
 console.log("--- DEBUGGING RENDER ENVIRONMENT ---");
 Object.keys(process.env).forEach(key => {

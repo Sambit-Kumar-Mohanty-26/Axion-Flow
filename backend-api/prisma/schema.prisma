@@ -30,6 +30,7 @@ model Factory {
   tasks          Task[]
   skills         Skill[]
   invitations    Invitation[] 
+  logs      LocationLog[]
 }
 
 enum Role {
@@ -87,6 +88,7 @@ model Worker {
   user             User?         @relation(fields: [userId], references: [id])
   skills           WorkerSkill[]
   tasks            Task[]        @relation("WorkerTasks")
+  logs      LocationLog[]
 
   factoryId        String
   factory          Factory       @relation(fields: [factoryId], references: [id])
@@ -143,4 +145,19 @@ model WorkerSkill {
   skill         Skill    @relation(fields: [skillId], references: [id])
 
   @@id([workerId, skillId])
+}
+
+model LocationLog {
+  id        String   @id @default(cuid())
+  workerId  String
+  worker    Worker   @relation(fields: [workerId], references: [id])
+  factoryId String
+  factory   Factory  @relation(fields: [factoryId], references: [id])
+  
+  x         Float
+  y         Float
+  status    String
+  timestamp DateTime @default(now())
+
+  @@index([factoryId, timestamp]) // Optimize for time-series querying
 }

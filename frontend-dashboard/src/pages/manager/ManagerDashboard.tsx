@@ -1,7 +1,7 @@
 import { useState, useEffect, type ReactNode } from 'react';
 import apiClient from '../../api/apiClient';
 import { motion } from 'framer-motion';
-import { Building, Users, ListChecks, CheckCircle, Plus, Wrench } from 'lucide-react';
+import { Building, Users, ListChecks, CheckCircle, Plus, Wrench, History, Activity, Layers } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { FactoryMap } from '../../components/dashboard/FactoryMap';
 import { TaskList } from '../../components/dashboard/TaskList';
@@ -43,6 +43,11 @@ export const ManagerDashboard = () => {
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isSkillsModalOpen, setIsSkillsModalOpen] = useState(false);
 
+  const [viewMode, setViewMode] = useState<'LIVE' | 'REPLAY' | 'HEATMAP'>('LIVE');
+  const [replayData, setReplayData] = useState<any[]>([]);
+  const [heatmapData, setHeatmapData] = useState<number[][] | null>(null);
+  const [replayIndex, setReplayIndex] = useState(0);
+
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
@@ -66,19 +71,11 @@ export const ManagerDashboard = () => {
   }, []);
 
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || viewMode !== 'LIVE') return;
 
-    const handleTaskCreate = (newTask: any) => {
-        setTasks(prev => [newTask, ...prev]);
-    };
-    
-    const handleTaskUpdate = (updatedTask: any) => {
-        setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
-    };
-
-    const handleWorkerUpdate = (updatedWorker: any) => {
-        setWorkers(prev => prev.map(w => w.id === updatedWorker.id ? updatedWorker : w));
-    };
+    const handleTaskCreate = (newTask: any) => setTasks(prev => [newTask, ...prev]);
+    const handleTaskUpdate = (updatedTask: any) => setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
+    const handleWorkerUpdate = (updatedWorker: any) => setWorkers(prev => prev.map(w => w.id === updatedWorker.id ? updatedWorker : w));
 
     socket.on('task:create', handleTaskCreate);
     socket.on('task:update', handleTaskUpdate);
@@ -89,7 +86,72 @@ export const ManagerDashboard = () => {
         socket.off('task:update', handleTaskUpdate);
         socket.off('worker:update', handleWorkerUpdate);
     };
-  }, [socket]);
+  }, [socket, viewMode]);
+
+  const loadReplay = async () => {
+    setViewMode('REPLAY');
+    setHeatmapData(null);
+    try {
+      const res = await apiClient.get('/analytics/replay?minutes=2880');
+      setReplayData(res.data);
+      setReplayIndex(0);
+    } catch (err) {
+      console.error("Failed to load replay", err);
+    }
+  };
+
+  const loadHeatmap = async () => {
+    setViewMode('HEATMAP');
+    try {
+      const res = await apiClient.get('/analytics/heatmap');
+      setHeatmapData(res.data);
+    } catch (err) {
+      console.error("Failed to load heatmap", err);
+    }
+  };
+
+  const switchToLive = () => {
+    setViewMode('LIVE');
+    setHeatmapData(null);
+    apiClient.get('/workers').then(res => setWorkers(res.data));
+  };
+
+  useEffect(() => {
+    let interval: any;
+    if (viewMode === 'REPLAY' && replayData.length > 0) {
+      interval = setInterval(() => {
+        setReplayIndex(prev => (prev + 1) % replayData.length);
+      }, 200);
+    }
+    return () => clearInterval(interval);
+  }, [viewMode, replayData]);
+
+  const getMapWorkers = () => {
+    if (viewMode === 'REPLAY' && replayData.length > 0) {
+      const log = replayData[replayIndex];
+      return [{
+        id: log.workerId,
+        name: "Playback History", 
+        status: log.status,
+        location_x: log.x,
+        location_y: log.y,
+        employeeId: "HIST"
+      }];
+    }
+    return workers;
+  };
+
+  const formatReplayTime = (timestamp: string) => {
+    if (!timestamp) return 'Loading...';
+    const date = new Date(timestamp);
+    return date.toLocaleString('en-US', {
+      month: 'short', 
+      day: 'numeric', 
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    }); 
+  };
 
 
   if (isLoading) return <div className="text-center p-8 text-gray-400">Loading Factory Dashboard...</div>;
@@ -103,9 +165,32 @@ export const ManagerDashboard = () => {
       transition={{ duration: 0.5 }}
       className="space-y-8"
     >
-      <div>
-        <h1 className="text-3xl font-bold mb-2 text-white">Factory Overview</h1>
-        <p className="text-gray-400">Welcome back, {user?.email}.</p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <h1 className="text-3xl font-bold mb-2 text-white">Factory Overview</h1>
+            <p className="text-gray-400">Welcome back, {user?.email}.</p>
+        </div>
+
+        <div className="flex gap-2 bg-gray-800 p-1 rounded-lg border border-white/10">
+            <button 
+                onClick={switchToLive}
+                className={`px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'LIVE' ? 'bg-green-600 text-white shadow-lg' : 'text-gray-400 hover:bg-gray-700'}`}
+            >
+                <Activity size={14} /> LIVE
+            </button>
+            <button 
+                onClick={loadReplay}
+                className={`px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'REPLAY' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-gray-700'}`}
+            >
+                <History size={14} /> REPLAY
+            </button>
+            <button 
+                onClick={loadHeatmap}
+                className={`px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-2 transition-all ${viewMode === 'HEATMAP' ? 'bg-orange-600 text-white shadow-lg' : 'text-gray-400 hover:bg-gray-700'}`}
+            >
+                <Layers size={14} /> HEATMAP
+            </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -117,9 +202,54 @@ export const ManagerDashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-10">
         <div className="lg:col-span-2 flex flex-col h-[600px]">
-          <h2 className="text-xl font-bold text-white mb-4">Live Factory Map</h2>
+          <div className="flex justify-between items-center mb-4">
+             <h2 className="text-xl font-bold text-white">
+                {viewMode === 'LIVE' ? 'Live Factory Map' : viewMode === 'REPLAY' ? 'Historical Playback' : 'Traffic Heatmap'}
+             </h2>
+             
+             {viewMode === 'REPLAY' && replayData.length > 0 && (
+                <div className="flex items-center gap-4 bg-gray-800 px-4 py-2 rounded-full border border-white/10 shadow-lg">
+                    <div className="flex flex-col">
+                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Historical Playback</span>
+                        <span className="text-sm text-blue-400 font-mono font-bold whitespace-nowrap">
+                            {formatReplayTime(replayData[replayIndex]?.timestamp)}
+                        </span>
+                    </div>
+                    <input 
+                        type="range" min="0" max={replayData.length - 1} 
+                        value={replayIndex} 
+                        onChange={(e) => setReplayIndex(Number(e.target.value))}
+                        className="w-48 h-1.5 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                    />
+                </div>
+             )}
+
+          </div>
+
           <div className="flex-1 bg-gray-800/50 rounded-xl border border-white/10 p-1 relative">
-             <FactoryMap initialWorkers={workers} isLoading={isLoading} />
+             <FactoryMap 
+                initialWorkers={getMapWorkers()} 
+                isLoading={isLoading} 
+                heatmapData={viewMode === 'HEATMAP' ? heatmapData : null}
+                isReplay={viewMode === 'REPLAY'}
+             />
+             
+             {viewMode === 'HEATMAP' && heatmapData && (
+                <div className="absolute inset-0 grid grid-rows-10 grid-cols-10 pointer-events-none z-10 m-1 rounded-lg overflow-hidden">
+                   {heatmapData.map((row, rIndex) => 
+                       row.map((intensity, cIndex) => (
+                           <div 
+                             key={`${rIndex}-${cIndex}`}
+                             style={{ 
+                                 backgroundColor: intensity > 0.5 ? 'rgba(239, 68, 68, 0.6)' : 'rgba(34, 197, 94, 0.1)', 
+                                 opacity: intensity
+                             }}
+                             className="w-full h-full blur-xl transition-all duration-500"
+                           />
+                       ))
+                   )}
+                </div>
+             )}
           </div>
         </div>
 

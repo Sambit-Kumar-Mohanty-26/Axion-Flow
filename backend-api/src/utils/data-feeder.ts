@@ -53,6 +53,15 @@ export const startDataFeeder = () => {
             data: { location_x, location_y },
             include: { skills: { include: { skill: true } } } 
           });
+          prisma.locationLog.create({
+            data: {
+              workerId: worker.id,
+              factoryId: worker.factoryId,
+              x: location_x,
+              y: location_y,
+              status: worker.status
+            }
+          }).catch((err: any) => console.error("Log error", err));
           
           io.emit('worker:update', updatedWorker);
         }));
@@ -95,6 +104,16 @@ export const startDataFeeder = () => {
           });
           io.emit('task:update', updatedTask);
         }
+      }
+      if (Math.random() < 0.01) {
+          const cleanupThreshold = new Date(Date.now() - 48 * 60 * 60 * 1000);
+          
+          await prisma.locationLog.deleteMany({
+              where: {
+                  timestamp: { lt: cleanupThreshold }
+              }
+          });
+          console.log("🧹 Data Feeder: Cleaned up history logs older than 48 hours.");
       }
 
     } catch (error) {

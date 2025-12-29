@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { WorkerAvatar } from './WorkerAvatar';
 import { useSocket } from '../../context/SocketContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Activity, IdCard, MapPin, Plus, Star, Box, Edit3, Save, RotateCcw } from 'lucide-react';
+import { X, Activity, IdCard, MapPin, Plus, Star, Box, Edit3, Save, RotateCcw, Layers, History } from 'lucide-react';
 import apiClient from '../../api/apiClient';
 import { Rnd } from 'react-rnd'; 
 import { useToast } from '../ui/Toast';
@@ -10,16 +10,18 @@ import { useToast } from '../ui/Toast';
 interface FactoryMapProps {
   initialWorkers: any[];
   isLoading: boolean;
+  heatmapData?: number[][] | null;
+  isReplay?: boolean;
 }
 
-export const FactoryMap = ({ initialWorkers, isLoading }: FactoryMapProps) => {
+export const FactoryMap = ({ initialWorkers, isLoading, heatmapData, isReplay }: FactoryMapProps) => {
   const socket = useSocket();
   const { showToast } = useToast();
-  const mapRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<HTMLDivElement>(null); 
   const [workers, setWorkers] = useState<any[]>([]);
   const [selectedWorker, setSelectedWorker] = useState<any | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-
+  
   const [isAddingSkill, setIsAddingSkill] = useState(false);
   const [availableSkills, setAvailableSkills] = useState<any[]>([]);
   const [skillForm, setSkillForm] = useState({ skillId: '', proficiency: 1 });
@@ -29,8 +31,12 @@ export const FactoryMap = ({ initialWorkers, isLoading }: FactoryMapProps) => {
   const [originalObstacles, setOriginalObstacles] = useState<any[]>([]);
 
   useEffect(() => {
-    if (initialWorkers && initialWorkers.length > 0) setWorkers(initialWorkers);
-  }, [initialWorkers]);
+    if (initialWorkers && initialWorkers.length > 0) {
+      setWorkers(initialWorkers);
+    } else if (!isLoading && !isReplay && !heatmapData) {
+      setWorkers([]);
+    }
+  }, [initialWorkers, isLoading, isReplay, heatmapData]);
 
   const fetchLayout = () => {
     apiClient.get('/factories/layout')
@@ -51,7 +57,13 @@ export const FactoryMap = ({ initialWorkers, isLoading }: FactoryMapProps) => {
   }, [isAddingSkill]);
 
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || isReplay || heatmapData) {
+        if (socket && socket.connected) {
+        }
+        setIsConnected(false);
+        return;
+    }
+
     const onConnect = () => setIsConnected(true);
     const onDisconnect = () => setIsConnected(false);
     if (socket.connected) setIsConnected(true);
@@ -64,7 +76,7 @@ export const FactoryMap = ({ initialWorkers, isLoading }: FactoryMapProps) => {
         prevWorkers.map((w) => {
           if (w.id === updatedWorker.id) {
             if (selectedWorker && selectedWorker.id === updatedWorker.id) {
-               setSelectedWorker((_curr: any) => ({ ...updatedWorker })); 
+               setSelectedWorker((curr: any) => ({ ...updatedWorker })); 
             }
             return updatedWorker;
           }
@@ -80,7 +92,7 @@ export const FactoryMap = ({ initialWorkers, isLoading }: FactoryMapProps) => {
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
     };
-  }, [socket, selectedWorker]);
+  }, [socket, selectedWorker, isReplay, heatmapData]);
 
   const handleAddSkillSubmit = async () => {
     if (!selectedWorker || !skillForm.skillId) return;
@@ -114,7 +126,7 @@ export const FactoryMap = ({ initialWorkers, isLoading }: FactoryMapProps) => {
   };
 
   const removeObstacle = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+    e.stopPropagation(); 
     e.preventDefault(); 
     setObstacles(prev => prev.filter(o => o.id !== id));
   };
@@ -127,7 +139,6 @@ export const FactoryMap = ({ initialWorkers, isLoading }: FactoryMapProps) => {
 
   return (
     <div className="relative w-full h-full bg-gray-900/80 rounded-xl border border-white/10 shadow-inner font-sans min-h-[500px] overflow-hidden" ref={mapRef}>
-
       <div className="absolute top-4 left-4 z-30 flex gap-2">
         {!isEditing ? (
             <button 
@@ -160,13 +171,55 @@ export const FactoryMap = ({ initialWorkers, isLoading }: FactoryMapProps) => {
         )}
       </div>
 
-      <div className="absolute top-4 right-4 z-20 flex items-center gap-2 px-3 py-1.5 bg-black/60 backdrop-blur-md rounded-full border border-white/10 shadow-xl">
-        <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
-        <span className="text-[10px] font-bold tracking-wider text-gray-300">{isConnected ? 'LIVE FEED' : 'OFFLINE'}</span>
+      <div className="absolute top-4 right-4 z-20">
+        {isReplay ? (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-900/80 backdrop-blur-md rounded-full border border-blue-500/30 shadow-xl">
+                <History size={12} className="text-blue-400" />
+                <span className="text-[10px] font-bold tracking-wider text-blue-100">REPLAY MODE</span>
+            </div>
+        ) : heatmapData ? (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-900/80 backdrop-blur-md rounded-full border border-orange-500/30 shadow-xl">
+                <Layers size={12} className="text-orange-400" />
+                <span className="text-[10px] font-bold tracking-wider text-orange-100">HEATMAP VIEW</span>
+            </div>
+        ) : (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-black/60 backdrop-blur-md rounded-full border border-white/10 shadow-xl">
+                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+                <span className="text-[10px] font-bold tracking-wider text-gray-300">{isConnected ? 'LIVE FEED' : 'OFFLINE'}</span>
+            </div>
+        )}
       </div>
 
       <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'linear-gradient(#444 1px, transparent 1px), linear-gradient(90deg, #444 1px, transparent 1px)', backgroundSize: '5% 5%' }}></div>
-      
+
+      {heatmapData && (
+        <>
+            <div className="absolute inset-0 grid grid-rows-10 grid-cols-10 pointer-events-none z-10 m-1 rounded-lg overflow-hidden">
+            {heatmapData.map((row, rIndex) => 
+                row.map((intensity, cIndex) => (
+                    <div 
+                        key={`${rIndex}-${cIndex}`}
+                        style={{ 
+                            backgroundColor: intensity > 0.6 ? 'rgba(239, 68, 68, 1)' : intensity > 0.3 ? 'rgba(234, 179, 8, 1)' : 'rgba(34, 197, 94, 1)', 
+                            opacity: Math.min(intensity * 0.7, 0.8) 
+                        }}
+                        className="w-full h-full blur-2xl transition-opacity duration-500"
+                    />
+                ))
+            )}
+            </div>
+
+            <div className="absolute bottom-4 left-4 z-40 bg-black/80 backdrop-blur-md p-3 rounded-lg border border-white/10 shadow-xl">
+                <p className="text-[10px] text-gray-400 font-bold uppercase mb-2">Traffic Density</p>
+                <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-white">Low</span>
+                    <div className="w-24 h-2 rounded-full bg-gradient-to-r from-green-500 via-yellow-500 to-red-500"></div>
+                    <span className="text-[10px] text-white">High</span>
+                </div>
+            </div>
+        </>
+      )}
+
       {obstacles.map((obs, index) => {
         const mapW = mapRef.current?.offsetWidth || 1;
         const mapH = mapRef.current?.offsetHeight || 1;
@@ -199,7 +252,7 @@ export const FactoryMap = ({ initialWorkers, isLoading }: FactoryMapProps) => {
                         newObstacles[index] = { ...obs, w: wPercent, h: hPercent, x: xPercent, y: yPercent };
                         setObstacles(newObstacles);
                     }}
-                    className="bg-blue-500/20 border-2 border-blue-400 flex items-center justify-center group z-30"
+                    className="bg-blue-500/20 border-2 border-blue-400 flex items-center justify-center group z-50"
                     dragHandleClassName="drag-handle"
                 >
                     <div 
@@ -226,7 +279,7 @@ export const FactoryMap = ({ initialWorkers, isLoading }: FactoryMapProps) => {
                 <div
                     key={obs.id}
                     className="absolute bg-gray-800/90 border border-teal-500/30 flex items-center justify-center shadow-lg rounded-sm"
-                    style={{ left: `${obs.x}%`, top: `${obs.y}%`, width: `${obs.w}%`, height: `${obs.h}%`, zIndex: 5 }}
+                    style={{ left: `${obs.x}%`, top: `${obs.y}%`, width: `${obs.w}%`, height: `${obs.h}%`, zIndex: heatmapData ? 15 : 5 }}
                 >
                     <div className="text-center opacity-70 w-full overflow-hidden px-1">
                         <Box className="mx-auto text-teal-500/50 mb-1" size={20} />
@@ -238,7 +291,7 @@ export const FactoryMap = ({ initialWorkers, isLoading }: FactoryMapProps) => {
         }
       })}
 
-      {workers.map((worker) => (
+      {!heatmapData && workers.map((worker) => (
         <WorkerAvatar key={worker.id} worker={worker} onClick={setSelectedWorker} />
       ))}
 
