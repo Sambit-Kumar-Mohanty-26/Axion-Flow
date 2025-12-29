@@ -7,6 +7,9 @@ const prisma = new PrismaClient();
 const UPDATE_INTERVAL_MS = 3000;
 const MOVE_STEP = 5;
 
+const workerTargets: Record<string, { x: number, y: number }> = {};
+
+
 const clamp = (num: number, min: number, max: number) => Math.min(Math.max(num, min), max);
 
 let isRunning = false;

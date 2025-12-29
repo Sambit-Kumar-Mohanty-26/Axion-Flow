@@ -44,7 +44,7 @@ export const ManagerDashboard = () => {
   const [isSkillsModalOpen, setIsSkillsModalOpen] = useState(false);
 
   const [viewMode, setViewMode] = useState<'LIVE' | 'REPLAY' | 'HEATMAP'>('LIVE');
-  const [replayData, setReplayData] = useState<any[]>([]);
+  const [replayFrames, setReplayFrames] = useState<any[]>([]);
   const [heatmapData, setHeatmapData] = useState<number[][] | null>(null);
   const [replayIndex, setReplayIndex] = useState(0);
 
@@ -88,12 +88,58 @@ export const ManagerDashboard = () => {
     };
   }, [socket, viewMode]);
 
+  const processReplayData = (logs: any[]) => {
+    if (!logs || logs.length === 0) return [];
+
+    const sortedLogs = [...logs].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    const frames: any[] = [];
+    const workerStateMap = new Map<string, any>();
+    const getBucketTime = (isoString: string) => {
+      const date = new Date(isoString);
+      const ms = date.getTime();
+      return Math.floor(ms / 3000) * 3000;
+    };
+
+    let currentBucketTime = getBucketTime(sortedLogs[0].timestamp);
+
+    sortedLogs.forEach((log) => {
+      const logTime = getBucketTime(log.timestamp);
+
+      if (logTime > currentBucketTime) {
+        frames.push({
+          timestamp: new Date(currentBucketTime).toISOString(),
+          workers: Array.from(workerStateMap.values())
+        });
+        currentBucketTime = logTime;
+      }
+
+      const liveWorkerInfo = workers.find(w => w.id === log.workerId);
+      
+      workerStateMap.set(log.workerId, {
+        id: log.workerId,
+        name: liveWorkerInfo ? liveWorkerInfo.name : "Recorded Worker",
+        status: log.status,
+        location_x: log.x,
+        location_y: log.y,
+        employeeId: liveWorkerInfo ? liveWorkerInfo.employeeId : "HIST"
+      });
+    });
+
+    frames.push({
+      timestamp: new Date(currentBucketTime).toISOString(),
+      workers: Array.from(workerStateMap.values())
+    });
+
+    return frames;
+  };
   const loadReplay = async () => {
     setViewMode('REPLAY');
     setHeatmapData(null);
     try {
       const res = await apiClient.get('/analytics/replay?minutes=2880');
-      setReplayData(res.data);
+      const frames = processReplayData(res.data);
+      
+      setReplayFrames(frames);
       setReplayIndex(0);
     } catch (err) {
       console.error("Failed to load replay", err);
@@ -118,25 +164,20 @@ export const ManagerDashboard = () => {
 
   useEffect(() => {
     let interval: any;
-    if (viewMode === 'REPLAY' && replayData.length > 0) {
+    if (viewMode === 'REPLAY' && replayFrames.length > 0) {
       interval = setInterval(() => {
-        setReplayIndex(prev => (prev + 1) % replayData.length);
+        setReplayIndex(prev => {
+            if (prev >= replayFrames.length - 1) return prev;
+            return prev + 1;
+        });
       }, 200);
     }
     return () => clearInterval(interval);
-  }, [viewMode, replayData]);
+  }, [viewMode, replayFrames]);
 
   const getMapWorkers = () => {
-    if (viewMode === 'REPLAY' && replayData.length > 0) {
-      const log = replayData[replayIndex];
-      return [{
-        id: log.workerId,
-        name: "Playback History", 
-        status: log.status,
-        location_x: log.x,
-        location_y: log.y,
-        employeeId: "HIST"
-      }];
+    if (viewMode === 'REPLAY' && replayFrames.length > 0) {
+      return replayFrames[replayIndex]?.workers || [];
     }
     return workers;
   };
@@ -207,23 +248,22 @@ export const ManagerDashboard = () => {
                 {viewMode === 'LIVE' ? 'Live Factory Map' : viewMode === 'REPLAY' ? 'Historical Playback' : 'Traffic Heatmap'}
              </h2>
              
-             {viewMode === 'REPLAY' && replayData.length > 0 && (
+             {viewMode === 'REPLAY' && replayFrames.length > 0 && (
                 <div className="flex items-center gap-4 bg-gray-800 px-4 py-2 rounded-full border border-white/10 shadow-lg">
                     <div className="flex flex-col">
                         <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Historical Playback</span>
                         <span className="text-sm text-blue-400 font-mono font-bold whitespace-nowrap">
-                            {formatReplayTime(replayData[replayIndex]?.timestamp)}
+                            {formatReplayTime(replayFrames[replayIndex]?.timestamp)}
                         </span>
                     </div>
                     <input 
-                        type="range" min="0" max={replayData.length - 1} 
+                        type="range" min="0" max={replayFrames.length - 1} 
                         value={replayIndex} 
                         onChange={(e) => setReplayIndex(Number(e.target.value))}
                         className="w-48 h-1.5 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-blue-500"
                     />
                 </div>
              )}
-
           </div>
 
           <div className="flex-1 bg-gray-800/50 rounded-xl border border-white/10 p-1 relative">
@@ -233,30 +273,12 @@ export const ManagerDashboard = () => {
                 heatmapData={viewMode === 'HEATMAP' ? heatmapData : null}
                 isReplay={viewMode === 'REPLAY'}
              />
-             
-             {viewMode === 'HEATMAP' && heatmapData && (
-                <div className="absolute inset-0 grid grid-rows-10 grid-cols-10 pointer-events-none z-10 m-1 rounded-lg overflow-hidden">
-                   {heatmapData.map((row, rIndex) => 
-                       row.map((intensity, cIndex) => (
-                           <div 
-                             key={`${rIndex}-${cIndex}`}
-                             style={{ 
-                                 backgroundColor: intensity > 0.5 ? 'rgba(239, 68, 68, 0.6)' : 'rgba(34, 197, 94, 0.1)', 
-                                 opacity: intensity
-                             }}
-                             className="w-full h-full blur-xl transition-all duration-500"
-                           />
-                       ))
-                   )}
-                </div>
-             )}
           </div>
         </div>
 
         <div className="flex flex-col h-[600px]">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-white">High Priority Tasks</h2>
-            
             <div className="flex gap-2">
               <button 
                   onClick={() => setIsSkillsModalOpen(true)}
@@ -274,7 +296,6 @@ export const ManagerDashboard = () => {
                   <Plus size={20} />
               </button>
             </div>
-
           </div>
           <div className="flex-1 bg-gray-800/50 rounded-xl border border-white/10 p-4 overflow-hidden">
              <TaskList tasks={tasks} />

@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import axionLogo from '../assets/logo.png';
 import { useSearchParams } from 'react-router-dom';
+import apiClient from '../api/apiClient';
 
 export const WorkerLoginPage = () => {
   const [factoryId, setFactoryId] = useState('');
@@ -23,7 +23,7 @@ export const WorkerLoginPage = () => {
     setIsLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:3001/api/auth/login/worker', {
+      const response = await apiClient.post('/auth/login/worker', {
         factoryId,
         employeeId,
         password,

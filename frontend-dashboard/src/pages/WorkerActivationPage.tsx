@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import axios from 'axios';
+import apiClient from '../api/apiClient';
 import axionLogo from '../assets/logo.png';
 import { CheckCircle, XCircle } from 'lucide-react';
 
@@ -30,7 +30,8 @@ export const WorkerActivationPage = () => {
     setIsLoading(true);
     setError('');
     try {
-      const response = await axios.post('http://localhost:3001/api/activation/verify-employee', {
+      // FIX: Use apiClient instead of axios.post('http://localhost...')
+      const response = await apiClient.post('/activation/verify-employee', {
         factoryId,
         employeeId,
       });
@@ -57,13 +58,15 @@ export const WorkerActivationPage = () => {
     setError('');
 
     try {
-      await axios.post('http://localhost:3001/api/activation/complete', {
+      // FIX: Use apiClient
+      await apiClient.post('/activation/complete', {
         factoryId,
         employeeId,
         password,
       });
       
       setPageStatus('SUCCESS');
+      // Redirect to the WORKER login page
       setTimeout(() => navigate(`/worker-login?factoryId=${factoryId}`), 2500);
 
     } catch (err: any) {
@@ -124,7 +127,7 @@ export const WorkerActivationPage = () => {
           <div className="text-center">
             <XCircle className="mx-auto h-16 w-16 text-red-400" />
             <h1 className="mt-4 text-3xl font-bold">Invalid Link</h1>
-            <p className="mt-2 text-gray-400">This activation link is invalid or has expired. Please contact your manager for a new link.</p>
+            <p className="mt-2 text-gray-400">This activation link is invalid or has expired.</p>
           </div>
         );
     }
