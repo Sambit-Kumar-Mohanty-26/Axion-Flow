@@ -6,12 +6,14 @@ import {
   Building, 
   Users, 
   LogOut, 
-  HardHat 
+  HardHat,
+  BrainCircuit
 } from 'lucide-react';
 
 const navLinks = [
   { to: "/dashboard", icon: <LayoutDashboard size={20} />, text: "Overview" },
   { to: "/dashboard/workers", icon: <HardHat size={20} />, text: "Workers", managerOnly: true },
+  { to: "/dashboard/simulation", icon: <BrainCircuit size={20} />, text: "Simulation", managerOnly: true },
   { to: "/dashboard/factories", icon: <Building size={20} />, text: "Factories", adminOnly: true },
   { to: "/dashboard/users", icon: <Users size={20} />, text: "Users", adminOnly: true },
 ];

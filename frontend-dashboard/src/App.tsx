@@ -14,6 +14,7 @@ import { FactoriesPage } from './pages/admin/FactoriesPage';
 import { UsersPage } from './pages/admin/UsersPage';
 import { WorkersPage } from './pages/manager/WorkersPage';
 import { SmoothScroll } from './components/layout/SmoothScroll';
+import { SimulationPage } from './pages/manager/SimulationPage';
 
 
 const PrivateRoute = ({ children }: { children: ReactElement }) => {
@@ -52,6 +53,7 @@ function App() {
             <Route index element={<DashboardPage />} />
             <Route path="factories" element={<FactoriesPage />} />
             <Route path="users" element={<UsersPage />} />
+            <Route path="simulation" element={<SimulationPage />} />
             <Route path="workers" element={<WorkersPage />} />
           </Route>
           

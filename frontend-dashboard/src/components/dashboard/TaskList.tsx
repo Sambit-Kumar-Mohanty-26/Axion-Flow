@@ -47,17 +47,31 @@ export const TaskList = ({ tasks: initialTasks }: TaskListProps) => {
   useEffect(() => {
     if(!socket) return;
     
-    socket.on('task:update', (updatedTask: Task) => {
-      setLocalTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
-    });
+     const handleUpdate = (updatedTask: Task) => {
+      setLocalTasks(prev => {
+        return prev.map(t => t.id === updatedTask.id ? updatedTask : t);
+      });
+    };
 
-    socket.on('task:delete', (data: { id: string }) => {
-        setLocalTasks(prev => prev.filter(t => t.id !== data.id));
-    });
+    const handleCreate = (newTask: Task) => {
+      setLocalTasks(prev => {
+        if (prev.find(t => t.id === newTask.id)) return prev;
+        return [newTask, ...prev];
+      });
+    };
+
+    const handleDelete = (data: { id: string }) => {
+      setLocalTasks(prev => prev.filter(t => t.id !== data.id));
+    };
+
+    socket.on('task:update', handleUpdate);
+    socket.on('task:create', handleCreate);
+    socket.on('task:delete', handleDelete);
     
     return () => { 
-        socket.off('task:delete'); 
-        socket.off('task:update');
+        socket.off('task:update', handleUpdate);
+        socket.off('task:create', handleCreate);
+        socket.off('task:delete', handleDelete);
     };
   }, [socket]);
 
@@ -92,11 +106,12 @@ export const TaskList = ({ tasks: initialTasks }: TaskListProps) => {
 
   const confirmDelete = async () => {
     if (!taskToDelete) return;
+    const idToRemove = taskToDelete;
+    setTaskToDelete(null);
+    setLocalTasks(prev => prev.filter(t => t.id !== idToRemove));
     try {
       await apiClient.delete(`/tasks/${taskToDelete}`);
-      setLocalTasks(prev => prev.filter(t => t.id !== taskToDelete));
       showToast('Task deleted', 'success');
-      setTaskToDelete(null); 
     } catch (error) {
       showToast('Failed to delete task', 'error');
     }

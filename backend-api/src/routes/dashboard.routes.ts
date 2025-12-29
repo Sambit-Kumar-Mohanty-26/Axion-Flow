@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { 
   handleGetOrgAnalytics, 
-  handleGetFactoryAnalytics 
+  handleGetFactoryAnalytics,
+  handleRunSimulation 
 } from '../controllers/dashboard.controller.js';
 import { authorize } from '../middleware/auth.middleware.js';
 
@@ -18,5 +19,7 @@ router.get(
   authorize('FACTORY_MANAGER', 'ORG_ADMIN'), 
   handleGetFactoryAnalytics
 );
+
+router.post('/simulate', handleRunSimulation);
 
 export default router;
