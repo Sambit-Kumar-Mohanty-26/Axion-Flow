@@ -76,7 +76,7 @@ export const FactoryMap = ({ initialWorkers, isLoading, heatmapData, isReplay }:
         prevWorkers.map((w) => {
           if (w.id === updatedWorker.id) {
             if (selectedWorker && selectedWorker.id === updatedWorker.id) {
-               setSelectedWorker((curr: any) => ({ ...updatedWorker })); 
+               setSelectedWorker((_curr: any) => ({ ...updatedWorker })); 
             }
             return updatedWorker;
           }
