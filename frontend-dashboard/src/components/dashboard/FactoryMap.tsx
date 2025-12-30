@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { WorkerAvatar } from './WorkerAvatar';
 import { useSocket } from '../../context/SocketContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Activity, IdCard, MapPin, Plus, Star, Box, Edit3, Save, RotateCcw, Layers, History } from 'lucide-react';
+import { X, Activity, IdCard, MapPin, Plus, Star, Box, Edit3, Save, RotateCcw, Layers, History, ShieldAlert, ShieldCheck } from 'lucide-react';
 import apiClient from '../../api/apiClient';
 import { Rnd } from 'react-rnd'; 
 import { useToast } from '../ui/Toast';
@@ -76,7 +76,7 @@ export const FactoryMap = ({ initialWorkers, isLoading, heatmapData, isReplay }:
         prevWorkers.map((w) => {
           if (w.id === updatedWorker.id) {
             if (selectedWorker && selectedWorker.id === updatedWorker.id) {
-               setSelectedWorker((_curr: any) => ({ ...updatedWorker })); 
+               setSelectedWorker((curr: any) => ({ ...curr, ...updatedWorker })); 
             }
             return updatedWorker;
           }
@@ -339,6 +339,15 @@ export const FactoryMap = ({ initialWorkers, isLoading, heatmapData, isReplay }:
                         <span>{selectedWorker.location_x?.toFixed(0)}, {selectedWorker.location_y?.toFixed(0)}</span>
                     </div>
                 </div>
+            </div>
+            <div className={`mt-3 p-3 rounded-lg border flex items-center justify-between ${selectedWorker.safetyStatus === 'AT_RISK' ? 'bg-red-500/10 border-red-500/30' : 'bg-green-500/10 border-green-500/30'}`}>
+                <div>
+                    <p className="text-[10px] text-gray-400 uppercase font-bold">Safety Compliance</p>
+                    <p className={`text-sm font-bold ${selectedWorker.safetyStatus === 'AT_RISK' ? 'text-red-400' : 'text-green-400'}`}>
+                        {selectedWorker.safetyStatus === 'AT_RISK' ? 'VIOLATION DETECTED' : 'VERIFIED SAFE'}
+                    </p>
+                </div>
+                {selectedWorker.safetyStatus === 'AT_RISK' ? <ShieldAlert size={20} className="text-red-500"/> : <ShieldCheck size={20} className="text-green-500"/>}
             </div>
 
             <div className="mb-4">

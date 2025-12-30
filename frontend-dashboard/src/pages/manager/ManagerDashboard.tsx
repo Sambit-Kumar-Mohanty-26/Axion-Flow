@@ -8,6 +8,7 @@ import { TaskList } from '../../components/dashboard/TaskList';
 import { useSocket } from '../../context/SocketContext';
 import { CreateTaskModal } from '../../components/modals/CreateTaskModal';
 import { ManageSkillsModal } from '../../components/modals/ManageSkillsModal';
+import { useToast } from '../../components/ui/Toast';
 
 interface StatCardProps {
   icon: ReactNode;
@@ -39,6 +40,7 @@ export const ManagerDashboard = () => {
   const [tasks, setTasks] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isSkillsModalOpen, setIsSkillsModalOpen] = useState(false);
@@ -76,15 +78,22 @@ export const ManagerDashboard = () => {
     const handleTaskCreate = (newTask: any) => setTasks(prev => [newTask, ...prev]);
     const handleTaskUpdate = (updatedTask: any) => setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
     const handleWorkerUpdate = (updatedWorker: any) => setWorkers(prev => prev.map(w => w.id === updatedWorker.id ? updatedWorker : w));
+    const handleSOS = (data: any) => {
+        const audio = new Audio('/sounds/sos.wav');
+         audio.play().catch(error => console.warn("Audio play blocked:", error));
+        showToast(`🚨 SOS: ${data.name} needs help! Location: [${data.location.x.toFixed(0)}, ${data.location.y.toFixed(0)}]`, 'error');
+    };
 
     socket.on('task:create', handleTaskCreate);
     socket.on('task:update', handleTaskUpdate);
     socket.on('worker:update', handleWorkerUpdate);
+    socket.on('manager:sos-alert', handleSOS); 
 
     return () => {
         socket.off('task:create', handleTaskCreate);
         socket.off('task:update', handleTaskUpdate);
         socket.off('worker:update', handleWorkerUpdate);
+        socket.off('manager:sos-alert', handleSOS);
     };
   }, [socket, viewMode]);
 

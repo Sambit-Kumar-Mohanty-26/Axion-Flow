@@ -1,8 +1,7 @@
 import { useAuth } from '../context/AuthContext';
 import { AdminDashboard } from './admin/AdminDashboard';
 import { ManagerDashboard } from './manager/ManagerDashboard';
-
-const WorkerDashboard = () => <div>This is the WORKER Dashboard. You can see your tasks and clock in.</div>;
+import { WorkerDashboard } from './worker/WorkerDashboard';
 
 export const DashboardPage = () => {
   const { user } = useAuth();

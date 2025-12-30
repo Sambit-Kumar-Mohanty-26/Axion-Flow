@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { User, Coffee, AlertCircle, HardHat } from 'lucide-react';
+import { User, Coffee, AlertCircle, HardHat, ShieldCheck, ShieldAlert  } from 'lucide-react';
 
 interface Worker {
   id: string;
@@ -8,6 +8,7 @@ interface Worker {
   status: 'AVAILABLE' | 'ON_TASK' | 'ON_BREAK' | 'ABSENT';
   location_x: number;
   location_y: number;
+  safetyStatus?: 'SAFE' | 'AT_RISK' | 'UNKNOWN';
 }
 
 interface WorkerAvatarProps {
@@ -32,6 +33,8 @@ const getStatusConfig = (status: Worker['status']) => {
 
 export const WorkerAvatar = ({ worker, onClick }: WorkerAvatarProps) => {
   const config = getStatusConfig(worker.status);
+  const isAtRisk = worker.safetyStatus === 'AT_RISK';
+  const isSafe = worker.safetyStatus === 'SAFE';
 
   return (
     <motion.div
@@ -55,6 +58,16 @@ export const WorkerAvatar = ({ worker, onClick }: WorkerAvatarProps) => {
         className={`relative w-8 h-8 rounded-full flex items-center justify-center bg-gray-800 border-2 border-white/10 shadow-lg ${config.ring} group-hover:ring-4 transition-all`}
       >
         <div className="text-white">{config.icon}</div>
+        {isAtRisk && (
+            <div className="absolute -top-1 -right-1 bg-red-600 rounded-full p-0.5 border border-black animate-pulse">
+                <ShieldAlert size={10} className="text-white" />
+            </div>
+        )}
+        {isSafe && (
+            <div className="absolute -top-1 -right-1 bg-green-600 rounded-full p-0.5 border border-black">
+                <ShieldCheck size={10} className="text-white" />
+            </div>
+        )}
         <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-gray-800 ${config.color}`} />
       </motion.div>
     </motion.div>

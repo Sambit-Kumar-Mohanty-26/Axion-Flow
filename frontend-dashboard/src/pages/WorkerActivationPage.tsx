@@ -30,7 +30,6 @@ export const WorkerActivationPage = () => {
     setIsLoading(true);
     setError('');
     try {
-      // FIX: Use apiClient instead of axios.post('http://localhost...')
       const response = await apiClient.post('/activation/verify-employee', {
         factoryId,
         employeeId,
@@ -58,7 +57,6 @@ export const WorkerActivationPage = () => {
     setError('');
 
     try {
-      // FIX: Use apiClient
       await apiClient.post('/activation/complete', {
         factoryId,
         employeeId,
@@ -66,7 +64,6 @@ export const WorkerActivationPage = () => {
       });
       
       setPageStatus('SUCCESS');
-      // Redirect to the WORKER login page
       setTimeout(() => navigate(`/worker-login?factoryId=${factoryId}`), 2500);
 
     } catch (err: any) {

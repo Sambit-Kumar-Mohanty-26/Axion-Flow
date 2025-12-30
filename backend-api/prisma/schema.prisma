@@ -89,6 +89,8 @@ model Worker {
   skills           WorkerSkill[]
   tasks            Task[]        @relation("WorkerTasks")
   logs      LocationLog[]
+  lastSafetyCheck  DateTime?
+  safetyStatus     String        @default("UNKNOWN") 
 
   factoryId        String
   factory          Factory       @relation(fields: [factoryId], references: [id])

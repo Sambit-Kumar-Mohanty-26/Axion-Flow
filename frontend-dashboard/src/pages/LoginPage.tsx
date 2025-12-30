@@ -113,6 +113,14 @@ export const LoginPage = () => {
             </motion.button>
           </div>
         </form>
+        <div className="mt-6 border-t border-white/10 pt-6 text-center">
+            <p className="text-sm text-gray-400 mb-3">Are you a Factory Worker?</p>
+            <Link to="/worker-login">
+                <button className="w-full py-2 px-4 bg-gray-800 hover:bg-gray-700 border border-white/10 rounded-lg text-sm font-semibold transition-colors text-blue-400">
+                    Sign in with Employee ID
+                </button>
+            </Link>
+        </div>
         <p className="text-center text-sm text-gray-400">
           Don't have an account?{' '}
           <a href="#" className="font-medium text-blue-400 hover:text-blue-300">

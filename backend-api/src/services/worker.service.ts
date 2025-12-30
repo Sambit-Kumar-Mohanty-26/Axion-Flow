@@ -142,3 +142,16 @@ export const bulkImportWorkers = async (
 
   return result;
 };
+
+export const recordSafetyCheck = async (workerId: string, factoryId: string) => {
+  const worker = await prisma.worker.findFirst({ where: { id: workerId, factoryId } });
+  if (!worker) throw new Error("Worker not found.");
+
+  const updatedWorker = await prisma.worker.update({
+    where: { id: workerId },
+    data: { lastSafetyCheck: new Date() }
+  });
+
+  io.emit('worker:update', updatedWorker);
+  return updatedWorker;
+};

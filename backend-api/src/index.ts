@@ -44,6 +44,10 @@ import type { Socket } from 'socket.io';
 
 io.on('connection', (socket: Socket) => {
   console.log(`⚡️ Client connected: ${socket.id}`);
+  socket.on('worker:sos', (data) => {
+      console.log(`🚨 SOS ALERT RECEIVED from ${data.name} (ID: ${data.workerId})`);
+      io.emit('manager:sos-alert', data);
+  });
   socket.on('disconnect', () => {
     console.log(`🔥 Client disconnected: ${socket.id}`);
   });
@@ -60,7 +64,7 @@ apiRouter.use('/skills', skillRoutes);
 apiRouter.use('/tasks', protect, taskRoutes);
 apiRouter.use('/factories', protect, factoryRoutes);
 apiRouter.use('/users', authorize('ORG_ADMIN'), userRoutes);
-apiRouter.use('/workers', authorize('ORG_ADMIN', 'FACTORY_MANAGER'), workerRoutes);
+apiRouter.use('/workers', protect, authorize('ORG_ADMIN', 'FACTORY_MANAGER', 'WORKER'), workerRoutes);
 apiRouter.use('/invites', authorize('ORG_ADMIN', 'FACTORY_MANAGER'), inviteRoutes); 
 apiRouter.use('/analytics', protect, authorize('ORG_ADMIN', 'FACTORY_MANAGER'), analyticsRoutes);
 app.use('/api', apiRouter);
