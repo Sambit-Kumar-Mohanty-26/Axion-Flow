@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
 import axionLogo from '../assets/logo.png';
 import apiClient from '../api/apiClient';
+import { ShieldCheck, Mail } from 'lucide-react';
 
 export const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -53,6 +54,23 @@ export const LoginPage = () => {
           </Link>
           <h1 className="text-3xl font-bold tracking-tight">Sign in to your Account</h1>
           <p className="mt-2 text-gray-400">Enter your credentials to access your dashboard.</p>
+        </div>
+
+        <div className="bg-gray-800/60 rounded-lg p-4 border border-white/5 space-y-3">
+            <div className="flex gap-3">
+                <ShieldCheck className="text-purple-400 shrink-0" size={18} />
+                <div className="text-xs text-gray-300">
+                    <strong className="text-white block">Organization Admin?</strong>
+                    <span>If you are setting up a new company, please <Link to="/signup" className="text-blue-400 hover:underline">Sign Up first</Link> to create your account.</span>
+                </div>
+            </div>
+            <div className="flex gap-3">
+                <Mail className="text-yellow-400 shrink-0" size={18} />
+                <div className="text-xs text-gray-300">
+                    <strong className="text-white block">Factory Manager?</strong>
+                    <span>You cannot sign up directly. You must be <strong>Invited by an Admin</strong>. Check your email for the access link.</span>
+                </div>
+            </div>
         </div>
         
         <form className="space-y-6" onSubmit={handleSubmit}>
@@ -122,10 +140,9 @@ export const LoginPage = () => {
             </Link>
         </div>
         <p className="text-center text-sm text-gray-400">
-          Don't have an account?{' '}
-          <a href="#" className="font-medium text-blue-400 hover:text-blue-300">
-            Contact Sales
-          </a>
+          Need to create a new workspace?{' '}
+          <Link to="/signup" className="font-medium text-blue-400 hover:text-blue-300"></Link>
+            Create Organization
         </p>
       </motion.div>
     </div>

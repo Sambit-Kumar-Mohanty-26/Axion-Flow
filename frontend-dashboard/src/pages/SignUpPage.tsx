@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import axionLogo from '../assets/logo.png';
 import apiClient from '../api/apiClient';
+import { Building2} from 'lucide-react';
 
 export const SignUpPage = () => {
   const [email, setEmail] = useState('');
@@ -62,6 +63,15 @@ export const SignUpPage = () => {
           </Link>
           <h1 className="text-3xl font-bold tracking-tight">Create your Company Account</h1>
           <p className="mt-2 text-gray-400">Get started with Axion Flow in minutes.</p>
+        </div>
+
+        <div className="bg-blue-900/30 border border-blue-500/30 rounded-lg p-4 flex gap-3 items-start">
+            <Building2 className="text-blue-400 shrink-0 mt-0.5" size={18} />
+            <div className="text-xs text-blue-200">
+                <p className="font-bold text-blue-100 mb-1">Corporate Verification Required</p>
+                <p>To ensure security, you must use an official <strong>Company Email ID</strong> (e.g., name@tesla.com).</p>
+                <p className="mt-1 opacity-75">Public emails (Gmail, Yahoo) will be rejected.</p>
+            </div>
         </div>
         
         <form className="space-y-4" onSubmit={handleSubmit}>
