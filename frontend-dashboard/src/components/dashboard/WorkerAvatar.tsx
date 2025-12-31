@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { User, Coffee, AlertCircle, HardHat, ShieldCheck, ShieldAlert  } from 'lucide-react';
 
 interface Worker {
+  isSOS: any;
   id: string;
   name: string;
   employeeId?: string;
@@ -33,6 +34,7 @@ const getStatusConfig = (status: Worker['status']) => {
 
 export const WorkerAvatar = ({ worker, onClick }: WorkerAvatarProps) => {
   const config = getStatusConfig(worker.status);
+  const isEmergency = worker.isSOS; 
   const isAtRisk = worker.safetyStatus === 'AT_RISK';
   const isSafe = worker.safetyStatus === 'SAFE';
 
@@ -48,6 +50,9 @@ export const WorkerAvatar = ({ worker, onClick }: WorkerAvatarProps) => {
       transition={{ duration: 3, ease: "linear" }}
       style={{ width: '32px', height: '32px', marginLeft: '-16px', marginTop: '-16px' }}
     >
+      {isEmergency && (
+        <span className="absolute inline-flex h-full w-full rounded-full animate-ping bg-red-500 opacity-75"></span>
+      )}
       <div className="absolute -top-8 opacity-0 group-hover:opacity-100 transition-opacity bg-black/80 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded border border-white/20 whitespace-nowrap z-20 pointer-events-none">
         {worker.name}
       </div>

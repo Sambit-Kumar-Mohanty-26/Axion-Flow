@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { WorkerAvatar } from './WorkerAvatar';
 import { useSocket } from '../../context/SocketContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Activity, IdCard, MapPin, Plus, Star, Box, Edit3, Save, RotateCcw, Layers, History, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { X, Activity, IdCard, MapPin, Plus, Star, Box, Edit3, Save, RotateCcw, Layers, History, AlertTriangle } from 'lucide-react';
 import apiClient from '../../api/apiClient';
 import { Rnd } from 'react-rnd'; 
 import { useToast } from '../ui/Toast';
@@ -14,10 +14,22 @@ interface FactoryMapProps {
   isReplay?: boolean;
 }
 
+interface SOSPayload {
+  workerId: string;
+  name: string;
+  location: { x: number; y: number };
+  factoryId: string;
+}
+
+interface SOSResolvePayload {
+  workerId: string;
+}
+
 export const FactoryMap = ({ initialWorkers, isLoading, heatmapData, isReplay }: FactoryMapProps) => {
   const socket = useSocket();
   const { showToast } = useToast();
-  const mapRef = useRef<HTMLDivElement>(null); 
+  const mapRef = useRef<HTMLDivElement>(null);
+  
   const [workers, setWorkers] = useState<any[]>([]);
   const [selectedWorker, setSelectedWorker] = useState<any | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -58,8 +70,6 @@ export const FactoryMap = ({ initialWorkers, isLoading, heatmapData, isReplay }:
 
   useEffect(() => {
     if (!socket || isReplay || heatmapData) {
-        if (socket && socket.connected) {
-        }
         setIsConnected(false);
         return;
     }
@@ -75,22 +85,53 @@ export const FactoryMap = ({ initialWorkers, isLoading, heatmapData, isReplay }:
       setWorkers((prevWorkers) => 
         prevWorkers.map((w) => {
           if (w.id === updatedWorker.id) {
+            const newWorker = { ...w, ...updatedWorker };
             if (selectedWorker && selectedWorker.id === updatedWorker.id) {
-               setSelectedWorker((curr: any) => ({ ...curr, ...updatedWorker })); 
+               setSelectedWorker(newWorker); 
             }
-            return updatedWorker;
+            return newWorker;
           }
           return w;
         })
       );
     };
 
+    const handleSOS = (data: SOSPayload) => {
+        setWorkers(prev => prev.map(w => {
+            if (w.id === data.workerId) {
+                const newWorker = { ...w, isSOS: true };
+                if (selectedWorker && selectedWorker.id === data.workerId) {
+                     setSelectedWorker(newWorker);
+                }
+                return newWorker;
+            }
+            return w;
+        }));
+    };
+
+    const handleSOSResolve = (data: SOSResolvePayload) => {
+        setWorkers(prev => prev.map(w => {
+            if (w.id === data.workerId) {
+                const newWorker = { ...w, isSOS: false };
+                if (selectedWorker && selectedWorker.id === data.workerId) {
+                     setSelectedWorker(newWorker);
+                }
+                return newWorker;
+            }
+            return w;
+        }));
+    };
+
     socket.on('worker:update', handleWorkerUpdate);
+    socket.on('manager:sos-alert', handleSOS);
+    socket.on('worker:sos-resolve', handleSOSResolve);
 
     return () => {
       socket.off('worker:update', handleWorkerUpdate);
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
+      socket.off('manager:sos-alert', handleSOS);
+      socket.off('worker:sos-resolve', handleSOSResolve);
     };
   }, [socket, selectedWorker, isReplay, heatmapData]);
 
@@ -191,7 +232,7 @@ export const FactoryMap = ({ initialWorkers, isLoading, heatmapData, isReplay }:
       </div>
 
       <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'linear-gradient(#444 1px, transparent 1px), linear-gradient(90deg, #444 1px, transparent 1px)', backgroundSize: '5% 5%' }}></div>
-
+      
       {heatmapData && (
         <>
             <div className="absolute inset-0 grid grid-rows-10 grid-cols-10 pointer-events-none z-10 m-1 rounded-lg overflow-hidden">
@@ -323,6 +364,23 @@ export const FactoryMap = ({ initialWorkers, isLoading, heatmapData, isReplay }:
                 </div>
               </div>
             </div>
+            
+            {selectedWorker.isSOS && (
+                <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg animate-pulse">
+                    <p className="text-red-400 font-bold text-xs uppercase mb-2 flex items-center gap-2">
+                        <AlertTriangle size={14}/> Emergency Active
+                    </p>
+                    <button 
+                        onClick={async () => {
+                            await apiClient.put(`/workers/${selectedWorker.id}/sos`, { active: false });
+                            setSelectedWorker((prev: any) => ({...prev, isSOS: false}));
+                        }}
+                        className="w-full py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded text-xs transition-colors"
+                    >
+                        MARK RESOLVED
+                    </button>
+                </div>
+            )}
 
             <div className="grid grid-cols-2 gap-3 mb-6">
                  <div className="p-3 bg-white/5 rounded-lg border border-white/5">
@@ -339,15 +397,6 @@ export const FactoryMap = ({ initialWorkers, isLoading, heatmapData, isReplay }:
                         <span>{selectedWorker.location_x?.toFixed(0)}, {selectedWorker.location_y?.toFixed(0)}</span>
                     </div>
                 </div>
-            </div>
-            <div className={`mt-3 p-3 rounded-lg border flex items-center justify-between ${selectedWorker.safetyStatus === 'AT_RISK' ? 'bg-red-500/10 border-red-500/30' : 'bg-green-500/10 border-green-500/30'}`}>
-                <div>
-                    <p className="text-[10px] text-gray-400 uppercase font-bold">Safety Compliance</p>
-                    <p className={`text-sm font-bold ${selectedWorker.safetyStatus === 'AT_RISK' ? 'text-red-400' : 'text-green-400'}`}>
-                        {selectedWorker.safetyStatus === 'AT_RISK' ? 'VIOLATION DETECTED' : 'VERIFIED SAFE'}
-                    </p>
-                </div>
-                {selectedWorker.safetyStatus === 'AT_RISK' ? <ShieldAlert size={20} className="text-red-500"/> : <ShieldCheck size={20} className="text-green-500"/>}
             </div>
 
             <div className="mb-4">

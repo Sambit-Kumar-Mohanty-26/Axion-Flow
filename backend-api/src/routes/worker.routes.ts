@@ -5,7 +5,8 @@ import {
   handleBulkImport,
   handleUpdateWorkerStatus,
   handleAddSkillToWorker,
-  handleSafetyCheck  
+  handleSafetyCheck,
+  handleToggleSOS  
 } from '../controllers/worker.controller.js';
 import { authorize } from '../middleware/auth.middleware.js';
 
@@ -19,5 +20,6 @@ router.post('/:id/safety-check', authorize('ORG_ADMIN', 'FACTORY_MANAGER', 'WORK
 router.post('/', authorize('ORG_ADMIN', 'FACTORY_MANAGER'), handleCreateWorker);
 router.post('/bulk-import', authorize('ORG_ADMIN', 'FACTORY_MANAGER'), handleBulkImport);
 router.post('/:id/skills', authorize('ORG_ADMIN', 'FACTORY_MANAGER'), handleAddSkillToWorker);
+router.put('/:id/sos', authorize('ORG_ADMIN', 'FACTORY_MANAGER', 'WORKER'), handleToggleSOS);
 
 export default router;

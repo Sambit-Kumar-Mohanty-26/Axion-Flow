@@ -92,12 +92,34 @@ export const handleAddSkillToWorker = async (req: AuthRequest, res: Response) =>
 
 export const handleSafetyCheck = async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
+  const { status } = req.body;
   const factoryId = req.user?.factoryId;
+
   if (!factoryId) return res.status(401).json({ message: "Unauthorized" });
 
   try {
-    const result = await workerService.recordSafetyCheck(id, factoryId);
-    res.status(200).json({ message: "Safety check recorded", timestamp: result.lastSafetyCheck });
+    const result = await workerService.recordSafetyCheck(id, status, factoryId);
+    
+    res.status(200).json({ 
+      message: "Safety check recorded", 
+      timestamp: result.lastSafetyCheck,
+      status: result.safetyStatus
+    });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const handleToggleSOS = async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+  const { active } = req.body;
+  const factoryId = req.user?.factoryId;
+
+  if (!factoryId) return res.status(401).json({ message: "Unauthorized" });
+
+  try {
+    const updatedWorker = await workerService.toggleWorkerSOS(id, active, factoryId);
+    res.status(200).json(updatedWorker);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

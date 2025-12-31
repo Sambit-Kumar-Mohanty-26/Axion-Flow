@@ -30,7 +30,8 @@ model Factory {
   tasks          Task[]
   skills         Skill[]
   invitations    Invitation[] 
-  logs      LocationLog[]
+  logs           LocationLog[]
+  alerts         Alert[]
 }
 
 enum Role {
@@ -91,6 +92,7 @@ model Worker {
   logs      LocationLog[]
   lastSafetyCheck  DateTime?
   safetyStatus     String        @default("UNKNOWN") 
+  isSOS            Boolean       @default(false)
 
   factoryId        String
   factory          Factory       @relation(fields: [factoryId], references: [id])
@@ -162,4 +164,15 @@ model LocationLog {
   timestamp DateTime @default(now())
 
   @@index([factoryId, timestamp]) // Optimize for time-series querying
+}
+
+model Alert {
+  id        String   @id @default(cuid())
+  type      String   // 'INFO', 'WARNING', 'CRITICAL'
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  factoryId String
+  factory   Factory  @relation(fields: [factoryId], references: [id])
 }

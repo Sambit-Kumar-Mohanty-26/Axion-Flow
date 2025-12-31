@@ -143,15 +143,32 @@ export const bulkImportWorkers = async (
   return result;
 };
 
-export const recordSafetyCheck = async (workerId: string, factoryId: string) => {
+export const recordSafetyCheck = async (workerId: string, status: string, factoryId: string) => {
   const worker = await prisma.worker.findFirst({ where: { id: workerId, factoryId } });
   if (!worker) throw new Error("Worker not found.");
 
   const updatedWorker = await prisma.worker.update({
     where: { id: workerId },
-    data: { lastSafetyCheck: new Date() }
+    data: { 
+      lastSafetyCheck: new Date(),
+      safetyStatus: status
+    }
   });
-
-  io.emit('worker:update', updatedWorker);
+  io.emit('worker:update', updatedWorker); 
   return updatedWorker;
+};
+
+export const toggleWorkerSOS = async (workerId: string, active: boolean, factoryId: string) => {
+    const updatedWorker = await prisma.worker.update({
+      where: { id: workerId, factoryId },
+      data: { isSOS: active }
+    });
+
+    if (active) {
+    } else {
+         io.emit('worker:sos-resolve', { workerId });
+    }
+    
+    io.emit('worker:update', updatedWorker);
+    return updatedWorker;
 };

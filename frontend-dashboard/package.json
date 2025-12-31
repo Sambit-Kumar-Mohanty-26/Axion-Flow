@@ -34,6 +34,7 @@
     "recharts": "^3.6.0",
     "socket.io-client": "^4.8.1",
     "three": "^0.182.0",
+    "timeago.js": "^4.0.2",
     "use-scramble": "^2.2.15"
   },
   "devDependencies": {

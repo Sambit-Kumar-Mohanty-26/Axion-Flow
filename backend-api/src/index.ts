@@ -15,6 +15,8 @@ import inviteRoutes from './routes/invite.routes.js';
 import publicInviteRoutes from './routes/publicInvite.routes.js'; 
 import { startDataFeeder } from './utils/data-feeder.js';
 import analyticsRoutes from './routes/analytics.routes.js';
+import alertRoutes from './routes/alert.routes.js';
+import { createAlert } from './services/alert.service.js';
 
 const app = express();
 const PORT = 10000; 
@@ -44,8 +46,11 @@ import type { Socket } from 'socket.io';
 
 io.on('connection', (socket: Socket) => {
   console.log(`⚡️ Client connected: ${socket.id}`);
-  socket.on('worker:sos', (data) => {
+  socket.on('worker:sos', async (data) => {
       console.log(`🚨 SOS ALERT RECEIVED from ${data.name} (ID: ${data.workerId})`);
+       if (data.factoryId) {
+         await createAlert(data.factoryId, `SOS: ${data.name} needs help at [${data.location.x.toFixed(0)}, ${data.location.y.toFixed(0)}]`, 'CRITICAL');
+      }
       io.emit('manager:sos-alert', data);
   });
   socket.on('disconnect', () => {
@@ -67,6 +72,7 @@ apiRouter.use('/users', authorize('ORG_ADMIN'), userRoutes);
 apiRouter.use('/workers', protect, authorize('ORG_ADMIN', 'FACTORY_MANAGER', 'WORKER'), workerRoutes);
 apiRouter.use('/invites', authorize('ORG_ADMIN', 'FACTORY_MANAGER'), inviteRoutes); 
 apiRouter.use('/analytics', protect, authorize('ORG_ADMIN', 'FACTORY_MANAGER'), analyticsRoutes);
+apiRouter.use('/alerts', protect, alertRoutes);
 app.use('/api', apiRouter);
 console.log("--- DEBUGGING RENDER ENVIRONMENT ---");
 Object.keys(process.env).forEach(key => {

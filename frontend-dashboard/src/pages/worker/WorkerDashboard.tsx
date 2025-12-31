@@ -29,6 +29,8 @@ interface Worker {
   location_y: number;
   lastSafetyCheck?: string;
   safetyStatus?: 'SAFE' | 'AT_RISK' | 'UNKNOWN';
+  userId?: string;
+  factoryId: string;
 }
 
 export const WorkerDashboard = () => {
@@ -40,6 +42,7 @@ export const WorkerDashboard = () => {
   const [myProfile, setMyProfile] = useState<Worker | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [completedToday, setCompletedToday] = useState(0);
+  
   const [isSafetyModalOpen, setIsSafetyModalOpen] = useState(false);
 
   const fetchWorkerData = async () => {
@@ -52,14 +55,17 @@ export const WorkerDashboard = () => {
       const allWorkers: Worker[] = workersRes.data;
       const allTasks: Task[] = tasksRes.data;
 
-      let profile = allWorkers.find(w => w.employeeId === user?.userId);
+      let profile = allWorkers.find(w => 
+        (w.userId && w.userId === user?.userId) || 
+        (w.employeeId && w.employeeId === user?.userId)
+      );
 
       if (!profile) {
-          profile = allWorkers.find(w => w.name === "Maria");
+        profile = allWorkers.find(w => w.name === "Maria");
       }
       
       if (!profile && allWorkers.length > 0) {
-          profile = allWorkers[0];
+        profile = allWorkers[0];
       }
 
       setMyProfile(profile || null);
@@ -92,6 +98,7 @@ export const WorkerDashboard = () => {
 
   useEffect(() => {
     if (myProfile && !myProfile.lastSafetyCheck && !isLoading) {
+       setIsSafetyModalOpen(true);
     }
   }, [myProfile, isLoading]);
 
@@ -122,7 +129,8 @@ export const WorkerDashboard = () => {
       socket.emit('worker:sos', { 
           workerId: myProfile.id, 
           name: myProfile.name, 
-          location: { x: myProfile.location_x, y: myProfile.location_y } 
+          location: { x: myProfile.location_x, y: myProfile.location_y },
+          factoryId: myProfile.factoryId
       });
       showToast("🚨 SOS Signal Sent to Manager!", "error");
   };
@@ -136,7 +144,7 @@ export const WorkerDashboard = () => {
   return (
     <>
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6 pb-10">
-
+      
       {myProfile.safetyStatus === 'AT_RISK' && (
         <div className="bg-red-500/10 border-l-4 border-red-500 p-4 rounded-r flex items-center gap-3">
             <AlertTriangle className="text-red-500" size={24} />
@@ -150,10 +158,14 @@ export const WorkerDashboard = () => {
       <div className="bg-gray-800/80 p-6 rounded-2xl border border-white/10 flex flex-col md:flex-row justify-between items-center gap-6 shadow-xl">
         <div className="flex items-center gap-4 w-full md:w-auto">
             <div className="relative">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-3xl font-bold text-white shadow-lg">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-3xl font-bold text-white shadow-lg relative">
                     {myProfile.name.charAt(0)}
+                    {myProfile.lastSafetyCheck && (
+                        <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1 border-2 border-gray-800" title="Safety Compliant">
+                            <CheckCircle size={12} className="text-white" />
+                        </div>
+                    )}
                 </div>
-                <div className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-gray-800 ${myProfile.status === 'AVAILABLE' || myProfile.status === 'ON_TASK' ? 'bg-green-500' : 'bg-yellow-500'}`} />
             </div>
             
             <div>
@@ -183,7 +195,7 @@ export const WorkerDashboard = () => {
                     <PauseCircle size={20} /> Break
                 </button>
              )}
-
+             
              <button onClick={handleSOS} className="p-3 bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white rounded-xl border border-red-500/50 transition-colors shadow-lg" title="EMERGENCY SOS">
                  <AlertTriangle size={20} />
              </button>
@@ -249,7 +261,7 @@ export const WorkerDashboard = () => {
                                     <div className="text-xs text-gray-500 font-mono bg-black/20 px-2 py-1 rounded">Pending</div>
                                 )}
                             </div>
-
+                            
                             {task.status === 'IN_PROGRESS' && (
                                 <div className="absolute bottom-0 left-0 h-1 bg-blue-500/50 transition-all duration-1000" style={{ width: `${task.progress}%` }} />
                             )}
@@ -260,7 +272,6 @@ export const WorkerDashboard = () => {
                 <div className="h-64 flex flex-col items-center justify-center bg-gray-800/20 rounded-xl border-2 border-dashed border-gray-700 text-gray-500">
                     <CheckCircle size={48} className="mb-4 opacity-20" />
                     <p className="font-semibold">All caught up!</p>
-                    <p className="text-sm">You have no active tasks. Stay safe.</p>
                 </div>
             )}
         </div>
