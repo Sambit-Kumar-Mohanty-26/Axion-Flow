@@ -1409,6 +1409,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Built with ❤️ by the Axion Flow Team**
+**Built with ❤️ by Sambit Kumar Mohanty**
 
 ⭐ Star this repo if you find it helpful!
